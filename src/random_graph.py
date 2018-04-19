@@ -91,6 +91,13 @@ class RandGraph:
             # print(key, node)
             self.update_actor_list(key, node)
 
+    def get_node_capa(self, node):
+        if self.graph.nodes[node]['actors']:
+            stack = len(self.graph.nodes[node]['actors'])
+            return stack < self.graph.nodes[node]['capacity']
+        else:
+            return True
+
     def move_actors(self):
         to_remove = []
         # pop current path position for each moving_actors
@@ -100,12 +107,14 @@ class RandGraph:
             node = actor.get_position()
             # update nodes actors lists
             if node:
-                self.update_actor_list(key, node, prev_node)
+                if self.get_node_capa(node):
+                    self.update_actor_list(key, node, prev_node)
             else:
                 to_remove.append(key)
                 self.update_actor_list(key, node, prev_node)
         # remove leaving actors
         [self.moving_actors.pop(i) for i in to_remove]
+
 
 
 class Actor:
