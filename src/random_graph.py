@@ -1,10 +1,8 @@
 import networkx as nx
-from random import randint,choice
+from random import randint,choice, sample
 import matplotlib.pyplot as plt
-
-
-
-
+import numpy as np
+from collections import deque
 
 class RandGraph:
     def __init__(self,actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
@@ -56,19 +54,21 @@ class RandGraph:
             exit_node = choice(self.exit_nodes)
             self.graph.add_edge(node1, exit_node)
 
-    def update_actor_list(self, key, node, prev_node=None):
-        if prev_node and self.graph.nodes[prev_node]['actors']:
-            self.graph.nodes[prev_node]['actors'].remove(key)
-        if node and self.graph.nodes[node]['actors']:
-            self.graph.nodes[node]['actors'].append(key)
-        elif prev_node and not node and self.graph.nodes[prev_node]['actors']:
-            if key in self.graph.nodes[prev_node]['actors']:
-                self.graph.nodes[prev_node]['actors'].remove(key)
-        elif node:
-            self.graph.nodes[node]['actors'] = [key]
-        else:
-            pass
+    def update_node(self, node, actor):
+        act_list = self.graph.nodes[node]['actors']
+        # print(node, act_list)
+        if not act_list:
+            act_list = []
+        act_list.append(actor)
+        nx.set_node_attributes(self.graph, {node: {'actors': act_list}})
 
+
+    def remove_from_node(self, node, actor):
+        act_list = self.graph.nodes[node]['actors']
+        if not act_list:
+            act_list = []
+        act_list.remove(actor)
+        nx.set_node_attributes(self.graph, {node: {'actors': act_list}})
 
     def set_actors(self, n):
         d = {}
@@ -78,44 +78,70 @@ class RandGraph:
         return d
 
     def init_actors(self):
-        # move actors and update nodes actors list
-        keys = [a.id for a in self.actors.values()][:self.nb_moving_act]
-        for key in keys:
+        actor_copy = self.actors
+        if len(self.actors) >= self.nb_moving_act:
+            spl = sample(self.actors.keys(), self.nb_moving_act)
+        else:
+            spl = self.actors.keys()
 
-            self.moving_actors[key] = self.actors.pop(key)
-            # set actor path
-            self.moving_actors[key].set_path()
-            print(self.moving_actors[key].path)
-            # record actors into nodes
-            node = self.moving_actors[key].get_position()
-            # print(key, node)
-            self.update_actor_list(key, node)
+        for actor in [actor_copy.pop(n) for n in spl]:
+            k = actor.id
+            self.moving_actors[k] = actor
+            self.moving_actors[k].set_path()
+            node = self.moving_actors[k].get_position()
+            if node:
+                self.update_node(node, k)
+            else:
+                self.moving_actors.pop(k)
+        self.actors = actor_copy
 
     def get_node_capa(self, node):
-        if self.graph.nodes[node]['actors']:
+        if (node in self.core_nodes) and (self.graph.nodes[node]['actors']):
             stack = len(self.graph.nodes[node]['actors'])
             return stack < self.graph.nodes[node]['capacity']
         else:
             return True
 
+    def actor_position(self, key):
+        for n in self.graph.nodes(data=True):
+            if (n[1]['actors']) and key in n[1]['actors']:
+                return n[0]
+
     def move_actors(self):
-        to_remove = []
-        # pop current path position for each moving_actors
-        for key, actor in self.moving_actors.items():
-            prev_node = actor.get_position()
-            actor.move()
-            node = actor.get_position()
-            # update nodes actors lists
-            if node:
-                if self.get_node_capa(node):
-                    self.update_actor_list(key, node, prev_node)
+        actors = self.moving_actors.copy()
+        for actor in actors:
+            # find current node
+            prev_node = self.actor_position(actor)
+            #     print(prev_node)
+            # remove id from current node
+            self.remove_from_node(prev_node, actor)
+            # find next node from the path
+            self.moving_actors[actor].move()
+            next_node = self.moving_actors[actor].get_position()
+            # add actor to the next node
+            if next_node:
+                self.update_node(next_node, actor)
             else:
-                to_remove.append(key)
-                self.update_actor_list(key, node, prev_node)
-        # remove leaving actors
-        [self.moving_actors.pop(i) for i in to_remove]
+                self.moving_actors.pop(actor)
 
+    def get_loading(self):
+        values = []
+        for node in self.graph.nodes(data=True):
+            if 'capacity' in node[1]:
+                if node[1]['actors']:
+                    values.append(len(node[1]['actors'])/float(node[1]['capacity']))
+                else:
+                    values.append(0.0)
+        return np.array([values])
 
+    def step(self, n=10):
+        data = np.zeros((1, len(self.core_nodes)))
+        for i in range(n):
+            self.init_actors()
+            self.move_actors()
+            values = self.get_loading()
+            data = np.vstack((data, values))
+        return data, self.core_nodes
 
 class Actor:
     def __init__(self, g, entry_nodes, exit_nodes):
@@ -134,11 +160,13 @@ class Actor:
 
     def set_path(self):
         # choose shortest path to exit node
-        while not self.path:
+        result = None
+        while result is None:
             try:
                 self.path = nx.shortest_path(self.graph,
                                              source=choice(self.entry_nodes),
                                              target=choice(self.exit_nodes))
+                result = True
             except nx.NetworkXNoPath:
                 pass
 
