@@ -2,7 +2,7 @@ import networkx as nx
 from random import randint,choice, sample
 import matplotlib.pyplot as plt
 import numpy as np
-from collections import deque
+import matplotlib.patches as mpatches
 
 class RandGraph:
     def __init__(self, actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
@@ -41,6 +41,12 @@ class RandGraph:
         nx.draw_networkx_labels(self.graph, pos, font_color='w')
         nx.draw_networkx_edges(self.graph, pos)
         plt.axis('off')
+        #legend
+        blue_patch = mpatches.Patch(color='steelblue', label='Core nodes')
+        red_patch = mpatches.Patch(color='r', label='Exit nodes')
+        green_patch = mpatches.Patch(color='g', label='Start nodes')
+
+        plt.legend(handles=[green_patch,blue_patch,red_patch])
         plt.show()
 
     def _rand_edges(self):
