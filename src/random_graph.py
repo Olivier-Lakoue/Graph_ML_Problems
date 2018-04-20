@@ -5,13 +5,13 @@ import numpy as np
 from collections import deque
 
 class RandGraph:
-    def __init__(self,actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
+    def __init__(self, actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
         self.n_paths = n_paths
         self.path_depth = path_depth
         self.entry_nodes = list(range(n_entry_nodes))
-        n = self.entry_nodes[-1]
+        n = self.entry_nodes[-1] + 1
         self.exit_nodes = list(range(n, n + n_exit_nodes))
-        n = self.exit_nodes[-1]
+        n = self.exit_nodes[-1] + 1
         self.core_nodes = list(range(n, n + n_core_nodes))
         self.graph = nx.DiGraph()
         self.graph.add_nodes_from(self.entry_nodes)
@@ -25,7 +25,19 @@ class RandGraph:
 
     def plot(self):
         pos = nx.kamada_kawai_layout(self.graph)
-        nx.draw_networkx_nodes(self.graph, pos, node_color='steelblue')
+        nx.draw_networkx_nodes(self.graph,
+                               pos,
+                               node_color='steelblue',
+                               nodelist=self.core_nodes)
+        nx.draw_networkx_nodes(self.graph,
+                               pos,
+                               node_color='g',
+                               nodelist=self.entry_nodes)
+        nx.draw_networkx_nodes(self.graph,
+                               pos,
+                               node_color='r',
+                               nodelist=self.exit_nodes)
+
         nx.draw_networkx_labels(self.graph, pos, font_color='w')
         nx.draw_networkx_edges(self.graph, pos)
         plt.axis('off')
@@ -44,7 +56,7 @@ class RandGraph:
             node1 = entry
             for _ in range(path_len):
                 node2 = choice(self.core_nodes)
-                edge_list.append((node1,node2))
+                edge_list.append((node1, node2))
                 node1 = node2
 
             # add paths to the graph
@@ -80,11 +92,12 @@ class RandGraph:
     def init_actors(self):
         actor_copy = self.actors
         if len(self.actors) >= self.nb_moving_act:
-            spl = sample(self.actors.keys(), self.nb_moving_act)
+            spl = list(sample(self.actors.keys(), self.nb_moving_act))
         else:
-            spl = self.actors.keys()
+            spl = list(self.actors.keys())
 
-        for actor in [actor_copy.pop(n) for n in spl]:
+        for n in spl:
+            actor = actor_copy.pop(n)
             k = actor.id
             self.moving_actors[k] = actor
             self.moving_actors[k].set_path()
@@ -113,16 +126,20 @@ class RandGraph:
             # find current node
             prev_node = self.actor_position(actor)
             #     print(prev_node)
-            # remove id from current node
-            self.remove_from_node(prev_node, actor)
-            # find next node from the path
-            self.moving_actors[actor].move()
-            next_node = self.moving_actors[actor].get_position()
-            # add actor to the next node
-            if next_node:
-                self.update_node(next_node, actor)
-            else:
-                self.moving_actors.pop(actor)
+            # check if next node is full
+            possible_node = self.moving_actors[actor].fetch_next()
+            if possible_node:
+                if self.get_node_capa(possible_node):
+                    # remove id from current node
+                    self.remove_from_node(prev_node, actor)
+                    # find next node from the path
+                    self.moving_actors[actor].move()
+                    next_node = self.moving_actors[actor].get_position()
+                    # add actor to the next node
+                    if next_node:
+                        self.update_node(next_node, actor)
+                    else:
+                        self.moving_actors.pop(actor)
 
     def get_loading(self):
         values = []
@@ -175,5 +192,9 @@ class Actor:
             return self.path[0]
         else:
             return None
-
+    def fetch_next(self):
+        if len(self.path)>1:
+            return self.path[1]
+        else:
+            return None
 
