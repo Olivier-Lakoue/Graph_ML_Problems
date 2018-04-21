@@ -157,14 +157,31 @@ class RandGraph:
                     values.append(0.0)
         return np.array([values])
 
-    def step(self, n=10):
+    def get_reward(self, type='rm'):
+        if (type == 'rm') :
+            denom = np.sum(list(nx.get_node_attributes(self.graph, 'capacity').values()), dtype=float)
+            num = np.sum([len(x) for x in nx.get_node_attributes(self.graph, 'actors').values() if x])
+            ratio = num / denom
+            reward = 1.0 - ratio
+            return reward
+        elif (type == 'mr'):
+            denom = np.array(list(nx.get_node_attributes(self.graph, 'capacity').values()), dtype=float)
+            num = np.array([len(x) if x else 0 for x in nx.get_node_attributes(self.graph.subgraph(self.core_nodes), 'actors').values()])
+            ratio = np.mean(num / denom)
+            reward = 1.0 - ratio
+            return reward
+
+
+    def step(self, n=10, reward_type='rm'):
         data = np.zeros((1, len(self.core_nodes)))
+        reward = []
         for i in range(n):
             self.init_actors()
             self.move_actors()
             values = self.get_loading()
             data = np.vstack((data, values))
-        return data, self.core_nodes
+            reward.append(self.get_reward(type=reward_type))
+        return data, self.core_nodes, reward
 
 class Actor:
     def __init__(self, g, entry_nodes, exit_nodes):
