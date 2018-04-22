@@ -3,6 +3,8 @@ from random import randint,choice, sample
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
+import uuid
+from progress.bar import Bar
 
 class RandGraph:
     def __init__(self, actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
@@ -157,35 +159,22 @@ class RandGraph:
                     values.append(0.0)
         return np.array([values])
 
-    def get_reward(self, type='rm'):
-        if (type == 'rm') :
-            denom = np.sum(list(nx.get_node_attributes(self.graph, 'capacity').values()), dtype=float)
-            num = np.sum([len(x) for x in nx.get_node_attributes(self.graph, 'actors').values() if x])
-            ratio = num / denom
-            reward = 1.0 - ratio
-            return reward
-        elif (type == 'mr'):
-            denom = np.array(list(nx.get_node_attributes(self.graph, 'capacity').values()), dtype=float)
-            num = np.array([len(x) if x else 0 for x in nx.get_node_attributes(self.graph.subgraph(self.core_nodes), 'actors').values()])
-            ratio = np.mean(num / denom)
-            reward = 1.0 - ratio
-            return reward
+    def step(self, n=10):
 
-
-    def step(self, n=10, reward_type='rm'):
         data = np.zeros((1, len(self.core_nodes)))
-        reward = []
         for i in range(n):
+            curr_prog = round(i/float(n),1)/0.1
             self.init_actors()
             self.move_actors()
             values = self.get_loading()
             data = np.vstack((data, values))
-            reward.append(self.get_reward(type=reward_type))
-        return data, self.core_nodes, reward
+
+            print('\r%% %d %10s' %(round(i/float(n)*100) , '|'*int(curr_prog)), sep='',end='', flush=True)
+        return data, self.core_nodes
 
 class Actor:
     def __init__(self, g, entry_nodes, exit_nodes):
-        self.id = randint(0, 1000)
+        self.id = uuid.uuid4()
         self.path = None
         self.graph = g
         self.entry_nodes = entry_nodes
