@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
 import uuid
-from progress.bar import Bar
+from binascii import hexlify
+from os import urandom
 
 class RandGraph:
     def __init__(self, actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
@@ -24,6 +25,7 @@ class RandGraph:
         self.actors = self.set_actors(actors)
         self.moving_actors = {}
         self.nb_moving_act = moving
+        self.actor_position = {}
 
     def plot(self):
         pos = nx.kamada_kawai_layout(self.graph)
@@ -123,26 +125,32 @@ class RandGraph:
         else:
             return True
 
-    def actor_position(self, key):
-        for n in self.graph.nodes(data=True):
-            if (n[1]['actors']) and key in n[1]['actors']:
-                return n[0]
+    # def actor_position(self, key):
+    #     for n in self.graph.nodes(data=True):
+    #         if (n[1]['actors']) and key in n[1]['actors']:
+    #             return n[0]
 
     def move_actors(self):
         actors = self.moving_actors.copy()
         for actor in actors:
             # find current node
-            prev_node = self.actor_position(actor)
-            #     print(prev_node)
+            if actor in self.actor_position:
+                prev_node = self.actor_position[actor]
+            else:
+                prev_node = None
+
             # check if next node is full
             possible_node = self.moving_actors[actor].fetch_next()
             if possible_node:
                 if self.get_node_capa(possible_node):
                     # remove id from current node
-                    self.remove_from_node(prev_node, actor)
+                    if prev_node:
+                        self.remove_from_node(prev_node, actor)
                     # find next node from the path
                     self.moving_actors[actor].move()
                     next_node = self.moving_actors[actor].get_position()
+                    # record position
+                    self.actor_position[actor] = next_node
                     # add actor to the next node
                     if next_node:
                         self.update_node(next_node, actor)
@@ -174,7 +182,7 @@ class RandGraph:
 
 class Actor:
     def __init__(self, g, entry_nodes, exit_nodes):
-        self.id = uuid.uuid4()
+        self.id = hexlify(urandom(4))
         self.path = None
         self.graph = g
         self.entry_nodes = entry_nodes
