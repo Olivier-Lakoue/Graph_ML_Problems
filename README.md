@@ -30,7 +30,7 @@ how would you predict the next move in the current path?
         congestion for each nodes at the next step.
         2. choosing a start and end node, predict the best next node according to 
         the probability of nodes congestion. What is the travel time difference
-        between path choosen by historical loading and probability of congestion?
+        between path chosen by historical loading and probability of congestion?
         3. predict each actors' number of steps to their destination
     
 ### Graph recommendation
