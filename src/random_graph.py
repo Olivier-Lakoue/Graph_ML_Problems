@@ -6,6 +6,7 @@ import matplotlib.patches as mpatches
 import uuid
 from binascii import hexlify
 from os import urandom
+from math import pi
 
 class RandGraph:
     def __init__(self, actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
@@ -99,10 +100,19 @@ class RandGraph:
             d[a.id] = a
         return d
 
-    def init_actors(self):
+    def get_nb_moving_actors(self, step_nb):
+        y = int((step_nb + pi) % (8 * pi))
+        y /= np.std([0, self.nb_moving_act])*4
+        y *= self.nb_moving_act
+        y = np.random.normal(loc=y, scale=self.nb_moving_act/10, size=1)
+        y = np.round(np.maximum(y,0))
+        return int(y[0])
+
+    def init_actors(self, step_nb):
         actor_copy = self.actors
-        if len(self.actors) >= self.nb_moving_act:
-            spl = list(sample(self.actors.keys(), self.nb_moving_act))
+        nb_m_a = self.get_nb_moving_actors(step_nb)
+        if len(self.actors) >= nb_m_a:
+            spl = list(sample(self.actors.keys(), nb_m_a))
         else:
             spl = list(self.actors.keys())
 
@@ -172,7 +182,7 @@ class RandGraph:
         data = np.zeros((1, len(self.core_nodes)))
         for i in range(n):
             curr_prog = round(i/float(n),1)/0.1
-            self.init_actors()
+            self.init_actors(step_nb=i)
             self.move_actors()
             values = self.get_loading()
             data = np.vstack((data, values))
