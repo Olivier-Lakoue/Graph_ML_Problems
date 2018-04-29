@@ -45,3 +45,20 @@ how would you define groups of targets ?
 limited resource quantity, how to predict running and finishing jobs execution
 for the next time steps ?
     * _use case: graph monitoring, dynamic planning_
+    
+### CPU profiling as login
+
+* Given sequences of CPU/GPU/RAM/Network usage, train a RNN to predict if it is allowed to
+login to an app. Python call graph based on `sys.set_trace()` can be used for profiling code
+in a particular environment.
+    * experiment: 
+        1.  generate multiple call graph on different machine
+        2.  graph classification
+        3.  
+    * _use case: passwordless login_
+    
+### Abstract Syntax Trees
+
+* Given the syntax trees of many program source code and execution timing in prod, 
+predict execution timing of dev programs.
+
