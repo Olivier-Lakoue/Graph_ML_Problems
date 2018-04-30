@@ -27,6 +27,8 @@ class RandGraph:
         self.moving_actors = {}
         self.nb_moving_act = moving
         self.actor_position = {}
+        self.step_counter = 0
+        self.current_reward = 0
 
     def plot(self):
         pos = nx.kamada_kawai_layout(self.graph)
@@ -101,6 +103,11 @@ class RandGraph:
         return d
 
     def get_nb_moving_actors(self, step_nb):
+        '''
+        Moving actor seasonality according to the step.
+        :param step_nb:
+        :return: number of moving actors
+        '''
         y = int((step_nb + pi) % (8 * pi))
         y /= np.std([0, self.nb_moving_act])*4
         y *= self.nb_moving_act
@@ -110,6 +117,8 @@ class RandGraph:
 
     def init_actors(self, step_nb):
         actor_copy = self.actors
+
+        # get the randomized number of moving actors
         nb_m_a = self.get_nb_moving_actors(step_nb)
         if len(self.actors) >= nb_m_a:
             spl = list(sample(self.actors.keys(), nb_m_a))
@@ -140,8 +149,13 @@ class RandGraph:
     #         if (n[1]['actors']) and key in n[1]['actors']:
     #             return n[0]
 
-    def move_actors(self):
+    def move_actors(self, blocked_nodes):
         actors = self.moving_actors.copy()
+        if blocked_nodes:
+            bn = blocked_nodes
+        else:
+            bn = []
+
         for actor in actors:
             # find current node
             if actor in self.actor_position:
@@ -151,7 +165,8 @@ class RandGraph:
 
             # check if next node is full
             possible_node = self.moving_actors[actor].fetch_next()
-            if possible_node:
+            # check that next_node is not in the list of blocked nodes
+            if possible_node and (possible_node not in bn):
                 if self.get_node_capa(possible_node):
                     # remove id from current node
                     if prev_node:
@@ -168,6 +183,9 @@ class RandGraph:
                         self.moving_actors.pop(actor)
 
     def get_loading(self):
+        '''
+        Core nodes congestion values
+        '''
         values = []
         for node in self.graph.nodes(data=True):
             if 'capacity' in node[1]:
@@ -177,17 +195,42 @@ class RandGraph:
                     values.append(0.0)
         return np.array([values])
 
-    def step(self, n=10):
+    def action(self, blocked_nodes=None):
+        '''
+        Block some nodes and get the next state and reward.
+        :param blocked_nodes:
+        :return: next_state and reward
+        '''
+        self.init_actors(self.step_counter)
+        self.step_counter += 1
+        self.move_actors(blocked_nodes)
+        values = self.get_loading()
+        reward = self.get_reward()
+        cur_rwd = self.current_reward
+        self.current_reward = reward
+        return values, reward - cur_rwd
 
+    def get_reward(self):
+        '''
+        Number of actors in the output nodes
+        :return:
+        '''
+        reward = []
+        for x in self.exit_nodes:
+            if self.graph.nodes[x]['actors']:
+                reward.append(len(self.graph.nodes(data=True)[x]['actors']))
+        return np.sum(reward)
+
+    def step(self, n=10):
         data = np.zeros((1, len(self.core_nodes)))
         for i in range(n):
             curr_prog = round(i/float(n),1)/0.1
             self.init_actors(step_nb=i)
-            self.move_actors()
+            self.move_actors([])
             values = self.get_loading()
             data = np.vstack((data, values))
 
-            print('\r%% %d %10s' %(round(i/float(n)*100) , '|'*int(curr_prog)), sep='',end='', flush=True)
+            print('\r%% %d %10s' % (round(i/float(n)*100), '|'*int(curr_prog)), sep='',end='', flush=True)
         return data, self.core_nodes
 
 class Actor:

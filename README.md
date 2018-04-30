@@ -32,6 +32,10 @@ how would you predict the next move in the current path?
         the probability of nodes congestion. What is the travel time difference
         between path chosen by historical loading and probability of congestion?
         3. predict each actors' number of steps to their destination
+        4. Recurrent network congestion 
+        5. Using inverse congestion as reward, predict next actions. 
+        Define actions: list of blocked nodes
+        Define reward: 1 - congestion
     
 ### Graph recommendation
 
