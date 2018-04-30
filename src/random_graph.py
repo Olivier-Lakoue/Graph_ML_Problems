@@ -9,20 +9,50 @@ from os import urandom
 from math import pi
 
 class RandGraph:
-    def __init__(self, actors=5, moving=2, n_entry_nodes=5, n_exit_nodes=4, n_core_nodes=11, n_paths=5, path_depth=6):
+    def __init__(self,
+                 actors=5,
+                 moving=2,
+                 n_entry_nodes=5,
+                 n_exit_nodes=4,
+                 n_core_nodes=11,
+                 n_paths=5,
+                 path_depth=6,
+                 graph_type=None):
+
         self.n_paths = n_paths
         self.path_depth = path_depth
-        self.entry_nodes = list(range(n_entry_nodes))
-        n = self.entry_nodes[-1] + 1
-        self.exit_nodes = list(range(n, n + n_exit_nodes))
-        n = self.exit_nodes[-1] + 1
-        self.core_nodes = list(range(n, n + n_core_nodes))
-        self.graph = nx.DiGraph()
-        self.graph.add_nodes_from(self.entry_nodes)
-        self.graph.add_nodes_from(self.exit_nodes)
-        self.graph.add_nodes_from([(x, {'capacity': randint(1, 10)}) for x in self.core_nodes])
-        nx.set_node_attributes(self.graph, None, 'actors')
-        self._rand_edges()
+
+        if graph_type == 'simple':
+            self.entry_nodes = [1]
+            self.exit_nodes = [5]
+            self.core_nodes = [2,3,4]
+            self.graph = nx.DiGraph()
+            self.graph.add_nodes_from(self.entry_nodes)
+            self.graph.add_nodes_from(self.exit_nodes)
+            self.graph.add_nodes_from([(x, {'capacity': randint(1, 10)}) for x in self.core_nodes])
+            nx.set_node_attributes(self.graph, None, 'actors')
+            edges = [
+                (1, 2),
+                (2, 3),
+                (3, 4),
+                (4, 2),
+                (4, 5)
+            ]
+            self.graph.add_edges_from(edges)
+
+        else:
+            self.entry_nodes = list(range(n_entry_nodes))
+            n = self.entry_nodes[-1] + 1
+            self.exit_nodes = list(range(n, n + n_exit_nodes))
+            n = self.exit_nodes[-1] + 1
+            self.core_nodes = list(range(n, n + n_core_nodes))
+            self.graph = nx.DiGraph()
+            self.graph.add_nodes_from(self.entry_nodes)
+            self.graph.add_nodes_from(self.exit_nodes)
+            self.graph.add_nodes_from([(x, {'capacity': randint(1, 10)}) for x in self.core_nodes])
+            nx.set_node_attributes(self.graph, None, 'actors')
+            self._rand_edges()
+
         self.actors = self.set_actors(actors)
         self.moving_actors = {}
         self.nb_moving_act = moving
