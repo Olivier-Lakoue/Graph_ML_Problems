@@ -3,10 +3,11 @@ from random import randint,choice, sample
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
-import uuid
+import pandas as pd
 from binascii import hexlify
 from os import urandom
 from math import pi
+import math
 
 class RandGraph:
     def __init__(self,
@@ -40,6 +41,38 @@ class RandGraph:
             ]
             self.graph.add_edges_from(edges)
 
+        elif graph_type == 'hongo_district':
+            self.entry_nodes = list(range(1, 11))
+            self.exit_nodes = list(range(11, 24))
+            # core node capacity
+            capa = pd.read_csv('../data/core_node_capacity.csv')
+            self.core_nodes = capa.node.tolist()
+            self.graph = nx.DiGraph()
+            self.graph.add_nodes_from(self.entry_nodes)
+            self.graph.add_nodes_from(self.exit_nodes)
+            self.graph.add_nodes_from([(x[1], {'capacity': x[2]}) for x in capa.itertuples()])
+            nx.set_node_attributes(self.graph, None, 'actors')
+
+            # entry edges
+            entry_edges = pd.read_csv('../data/entry_edges_Hongo_district.csv', header=None)
+            entry_edges_tpl = [(x[1], x[2]) for x in entry_edges.itertuples()]
+            # exit edges
+            exit_edges = pd.read_csv('../data/exit_edges_Hongo_district.csv', header=None)
+            exit_edges_tpl = [(x[1], x[2]) for x in exit_edges.itertuples()]
+            # core nodes edges
+            core_edges = pd.read_csv('../data/core_edge_list_Hongo_district.csv')
+            edg_lst = []
+            for col in core_edges:
+                if col != 'head_node':
+                    head_val = core_edges['head_node'].values
+                    tail_val = core_edges[col].values
+                    edg_lst.append([(x, y) for x, y in zip(head_val, tail_val)])
+            core_edge_list = [(x[0], int(x[1])) for y in edg_lst for x in y if not math.isnan(float(x[1]))]
+            # add edges
+            self.graph.add_edges_from(entry_edges_tpl)
+            self.graph.add_edges_from(exit_edges_tpl)
+            self.graph.add_edges_from(core_edge_list)
+
         else:
             self.entry_nodes = list(range(n_entry_nodes))
             n = self.entry_nodes[-1] + 1
@@ -60,7 +93,9 @@ class RandGraph:
         self.step_counter = 0
         self.current_reward = 0
 
-    def plot(self):
+    def plot(self, fig_size=None):
+        if fig_size:
+            plt.figure(figsize=fig_size)
         pos = nx.kamada_kawai_layout(self.graph)
         nx.draw_networkx_nodes(self.graph,
                                pos,
@@ -240,16 +275,25 @@ class RandGraph:
         self.current_reward = reward
         return values, reward - cur_rwd
 
+    # def get_reward(self):
+    #     '''
+    #     Number of actors in the output nodes
+    #     :return:
+    #     '''
+    #     reward = []
+    #     for x in self.exit_nodes:
+    #         if self.graph.nodes[x]['actors']:
+    #             reward.append(len(self.graph.nodes(data=True)[x]['actors']))
+    #     return np.sum(reward)
+
     def get_reward(self):
         '''
-        Number of actors in the output nodes
+        Ratio of nodes saturation
         :return:
         '''
-        reward = []
-        for x in self.exit_nodes:
-            if self.graph.nodes[x]['actors']:
-                reward.append(len(self.graph.nodes(data=True)[x]['actors']))
-        return np.sum(reward)
+        values = self.get_loading()
+        reward = len(self.core_nodes) / np.sum(values)
+        return reward
 
     def step(self, n=10):
         data = np.zeros((1, len(self.core_nodes)))
