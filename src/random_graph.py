@@ -24,20 +24,22 @@ class RandGraph:
         self.path_depth = path_depth
 
         if graph_type == 'simple':
-            self.entry_nodes = [1]
-            self.exit_nodes = [5]
-            self.core_nodes = [2,3,4]
+            self.entry_nodes = [1,2]
+            self.exit_nodes = [7]
+            self.core_nodes = [3,4,5,6]
             self.graph = nx.DiGraph()
             self.graph.add_nodes_from(self.entry_nodes)
             self.graph.add_nodes_from(self.exit_nodes)
-            self.graph.add_nodes_from([(x, {'capacity': randint(1, 10)}) for x in self.core_nodes])
+            capa = [7,6,2,2]
+            self.graph.add_nodes_from([(x, {'capacity': capa[i]}) for i,x in enumerate(self.core_nodes)])
             nx.set_node_attributes(self.graph, None, 'actors')
             edges = [
-                (1, 2),
-                (2, 3),
-                (3, 4),
-                (4, 2),
-                (4, 5)
+                (1, 3),
+                (2, 4),
+                (3, 5),
+                (4, 5),
+                (5, 6),
+                (6, 7)
             ]
             self.graph.add_edges_from(edges)
 
@@ -273,7 +275,11 @@ class RandGraph:
         reward = self.get_reward()
         cur_rwd = self.current_reward
         self.current_reward = reward
-        return values, reward - cur_rwd
+        if self.step_counter != 0:
+            reward = reward - cur_rwd
+        else:
+            reward = 0
+        return values, reward
 
     # def get_reward(self):
     #     '''
@@ -292,7 +298,7 @@ class RandGraph:
         :return:
         '''
         values = self.get_loading()
-        reward = len(self.core_nodes) / np.sum(values)
+        reward = len(self.core_nodes) / np.sum(values + 1.)
         return reward
 
     def step(self, n=10):
