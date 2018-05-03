@@ -23,6 +23,7 @@ class RandGraph:
         self.n_paths = n_paths
         self.path_depth = path_depth
 
+
         if graph_type == 'simple':
             self.entry_nodes = [1,2]
             self.exit_nodes = [7]
@@ -273,12 +274,12 @@ class RandGraph:
         self.move_actors(blocked_nodes)
         values = self.get_loading()
         reward = self.get_reward()
-        cur_rwd = self.current_reward
-        self.current_reward = reward
-        if self.step_counter != 0:
-            reward = reward - cur_rwd
-        else:
-            reward = 0
+        # cur_rwd = self.current_reward
+        # self.current_reward = reward
+        # if self.step_counter != 0:
+        #     reward = reward - cur_rwd
+        # else:
+        #     reward = 0
         return values, reward
 
     # def get_reward(self):
@@ -292,13 +293,30 @@ class RandGraph:
     #             reward.append(len(self.graph.nodes(data=True)[x]['actors']))
     #     return np.sum(reward)
 
+    # def get_reward(self):
+    #     '''
+    #     Ratio of nodes saturation
+    #     :return:
+    #     '''
+    #     values = self.get_loading()
+    #     reward = len(self.core_nodes) / np.sum(values + 1.)
+    #     return reward
+
     def get_reward(self):
-        '''
-        Ratio of nodes saturation
+        """
+        Reward as a combination of output and congestion level
         :return:
-        '''
+        """
+        # number of actors out
+        out = sum([len(self.graph.node[n]['actors']) for n
+                   in self.exit_nodes
+                   if self.graph.node[n]['actors']])
+        # saturation of the core nodes
         values = self.get_loading()
-        reward = len(self.core_nodes) / np.sum(values + 1.)
+        congestion = 1 - np.mean(values)
+        # reward combine the evolution of the output and congestion level
+        reward = (out - self.current_reward) * congestion
+        self.current_reward = out
         return reward
 
     def step(self, n=10):
