@@ -34,4 +34,8 @@ and as output:
 5. A report function plotting the rolling mean of the rewards and save on disk
 
 
+### Tests
+1. use deep recurrent keras layers as in `[16]_recurrent_neural_nets.ipynb`
+and states sequence preparation as in `[15]_sequence_preparation.ipynb`
 
+2. 
