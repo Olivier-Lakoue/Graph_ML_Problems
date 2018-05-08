@@ -1,4 +1,8 @@
 import numpy as np
+from itertools import combinations
+from random import randint
+from keras.models import Model
+from keras.layers import Dense, Input, multiply
 
 class Memory():
     """
@@ -11,7 +15,7 @@ class Memory():
         :param states_len:
         :param actions_len:
         """
-        self.shape = (length, 2*states_len + actions_len + 1)
+        self.shape = (length, (2*states_len + actions_len + 1))
         self.sample_shape = tuple(np.subtract(self.shape, (1,0)))
         # an array of random normal dist mu=0.5 std=0.25
         self.memory = 0.25 * np.random.randn(*self.shape) + 0.5
@@ -66,3 +70,139 @@ class Memory():
         rewards = samples[:, self.states_length*2: self.states_length*2+1]
         actions = samples[:, self.states_length*2+1:]
         return states, actions, next_states, rewards
+
+class ActionSpace():
+    """
+    One hot encoding of actions combinations.
+    """
+    def __init__(self, graph):
+        """
+        Get the core_nodes from the submited instance of RandGraph() to
+        produce all the combinations of core_nodes. Encode the combination
+        vector as one_hot vector.
+        :param graph: RandGraph() instance
+        """
+        self.nodes = graph.core_nodes
+        self.combinations = self.action_comb()
+
+    def action_comb(self):
+        c = []
+        for i in range(1, len(self.nodes)+1):
+            c.extend(list(combinations(self.nodes, i)))
+        return c
+
+    def sample(self):
+        """
+        Return a random one_hot vector
+        :return: numpy array
+        """
+        a = np.zeros((1, len(self.combinations)))
+        idx = self.combinations[randint(0, len(self.combinations)-1)]
+        a[:, self.combinations.index(idx)] = 1.0
+        return a
+
+    def get_nodes(self, action):
+        """
+        Return combination of nodes from supplied action one_hot vector.
+        :param action: numpy array
+        :return: list of int
+        """
+        idx = np.where(action == 1.)[1][0]
+        return list(self.combinations[idx])
+
+    def get_action(self, model, epsilon, state):
+        """
+        Get memory based or predicted action vector according to epsilon proba.
+        :param model:
+        :param epsilon:
+        :param state:
+        :return:
+        """
+        if np.random.randn() < epsilon:
+            action = self.sample()
+        else:
+            a = self.sample()
+            q_values = model.predict([state, np.ones_like(a)])
+            idx = np.argmax(q_values)
+            action = np.zeros((1, len(self.combinations)))
+            action[:, idx] = 1.
+        return action
+
+class DQN():
+    """
+    Deep Q_learning model an accessory functions.
+    """
+    def __init__(self, graph, gamma=.9, batch_size=32, mem_size=10000):
+        """
+        Initial model
+        :param length_states: int
+        :param length_actions: int
+        :param gamma: discount factor for the bellman equation
+        :param mem_size: length of the memory to sample from during fitting
+
+        """
+        self.gamma = gamma
+        self.batch_size = batch_size
+        self.graph = graph
+        self.action_space = ActionSpace(graph)
+        action = self.action_space.sample()
+        self.length_actions = action.shape[1]
+        self.length_states = len(graph.core_nodes)
+        self.model = self.create_model(self.length_states, self.length_actions)
+        self.memory = Memory(mem_size, self.length_states, self.length_actions)
+        self.total_rewards = []
+
+    def create_model(self, nb_values, nb_actions):
+        values_input = Input((nb_values,), name='values')
+        action_input = Input((nb_actions,), name='mask')
+        x = Dense(32, activation='relu')(values_input)
+        x = Dense(32, activation='relu')(x)
+        output = Dense(nb_actions)(x)
+        filtered_output = multiply([output, action_input])
+        model = Model(inputs=[values_input, action_input], outputs=filtered_output)
+        model.compile(optimizer='rmsprop', loss='mse')
+        return model
+
+    def get_epsilon_for(self, iteration):
+        """
+        Epsilon-greedy scheduler function
+        :param iteration: step
+        :return: epsilon(float)
+        """
+        e = 0.99 - 0.0001 * iteration
+        if e < 0.1:
+            e = 0.1
+        return e
+
+    def fit(self, states, actions, next_states, rewards):
+        # get all the Q_values for this specific states
+        next_Q_values = self.model.predict([next_states, np.ones_like(actions)])
+        # bellman
+        Q_values = rewards + self.gamma * np.max(next_Q_values, axis=1)[:, None]
+        # target Q_values
+        out = actions * Q_values
+        # train
+        self.model.fit([states, actions], out, batch_size=self.batch_size, verbose=0)
+
+    def train(self, steps):
+        # initial state
+        state = np.zeros((1,self.length_states))
+        for step in range(steps):
+            # select an action
+            epsilon = self.get_epsilon_for(step)
+            action = self.action_space.get_action(self.model, epsilon, state)
+            # Act on the graph
+            n = self.action_space.get_nodes(action)
+            next_state, reward = self.graph.action(n)
+
+            # remember
+            self.memory.load(state, action, next_state, reward)
+            # store reward
+            self.total_rewards.append(reward)
+
+            # get a batch and fit
+            states, actions, next_states, rewards = self.memory.replay(self.batch_size)
+            self.fit(states, actions, next_states, rewards)
+
+            # prepare for the next step
+            state = next_state
