@@ -125,7 +125,11 @@ class RandGraph:
         node_colors = []
         for x, attr in self.graph.nodes(data=True):
             if x in self.core_nodes:
-                node_colors.append('steelblue')
+
+                if attr['actors'] and (len(attr['actors']) == attr['capacity']):
+                    node_colors.append('purple')
+                else:
+                    node_colors.append('steelblue')
             elif x in self.entry_nodes:
                 node_colors.append('g')
             elif x in self.exit_nodes:
@@ -138,18 +142,6 @@ class RandGraph:
         if fig_size:
             plt.figure(figsize=fig_size)
         pos = nx.kamada_kawai_layout(self.graph)
-        # nx.draw_networkx_nodes(self.graph,
-        #                        pos,
-        #                        node_color='steelblue',
-        #                        nodelist=self.core_nodes)
-        # nx.draw_networkx_nodes(self.graph,
-        #                        pos,
-        #                        node_color='g',
-        #                        nodelist=self.entry_nodes)
-        # nx.draw_networkx_nodes(self.graph,
-        #                        pos,
-        #                        node_color='r',
-        #                        nodelist=self.exit_nodes)
         ns = self.get_node_sizes()
         nc = self.get_node_colors()
         nx.draw_networkx_nodes(self.graph,
@@ -157,17 +149,23 @@ class RandGraph:
                                node_color=nc,
                                node_size=ns)
         h, actor_pos = self.actors_position(pos)
-        nx.draw_networkx_nodes(h, actor_pos, node_size=20, node_color='black', alpha=0.5)
+        nx.draw_networkx_nodes(h, actor_pos, node_size=20, node_color='orange', alpha=0.7)
 
         nx.draw_networkx_labels(self.graph, pos, font_color='w')
         nx.draw_networkx_edges(self.graph, pos)
         plt.axis('off')
         #legend
         blue_patch = mpatches.Patch(color='steelblue', label='Core nodes')
+        purple_patch = mpatches.Patch(color='purple', label='Saturated nodes')
         red_patch = mpatches.Patch(color='r', label='Exit nodes')
         green_patch = mpatches.Patch(color='g', label='Start nodes')
+        orange_patch = mpatches.Patch(color='orange', label='Moving actors')
 
-        plt.legend(handles=[green_patch,blue_patch,red_patch])
+        plt.legend(handles=[green_patch,
+                            blue_patch,
+                            purple_patch,
+                            red_patch,
+                            orange_patch])
         # plt.show()
 
     def _rand_edges(self):
