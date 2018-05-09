@@ -5,7 +5,7 @@ from random_graph import RandGraph
 import matplotlib.pyplot as plt
 import pylab
 
-g = RandGraph( actors=1000)
+g = RandGraph(graph_type='simple', actors=1000)
 h = RandGraph(graph_type='simple', actors=1000)
 plt.style.use('seaborn-talk')
 
