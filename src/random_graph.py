@@ -96,22 +96,68 @@ class RandGraph:
         self.step_counter = 0
         self.current_reward = 0
 
+    def actors_position(self, pos):
+        h = nx.Graph()
+        actor_pos = {}
+        for node in self.core_nodes:
+            if self.graph.nodes()[node]['actors']:
+                nb_actors = len(self.graph.nodes()[node]['actors'])
+                for actor in range(nb_actors):
+                    name = '%d_%d' % (node, actor)
+                    h.add_node(name)
+                    x = pos[node][0]
+                    x_actor = 0.01 * np.random.randn() + x
+                    y = pos[node][1]
+                    y_actor = 0.01 * np.random.randn() + y
+                    actor_pos[name] = np.array([x_actor, y_actor])
+        return h, actor_pos
+
+    def get_node_sizes(self):
+        node_sizes = []
+        for x, attr in self.graph.nodes(data=True):
+            if 'capacity' in attr:
+                node_sizes.append(150 + 50 * attr['capacity'])
+            else:
+                node_sizes.append(150)
+        return node_sizes
+
+    def get_node_colors(self):
+        node_colors = []
+        for x, attr in self.graph.nodes(data=True):
+            if x in self.core_nodes:
+                node_colors.append('steelblue')
+            elif x in self.entry_nodes:
+                node_colors.append('g')
+            elif x in self.exit_nodes:
+                node_colors.append('r')
+            else:
+                node_colors.append('black')
+        return node_colors
+
     def plot(self, fig_size=None):
         if fig_size:
             plt.figure(figsize=fig_size)
         pos = nx.kamada_kawai_layout(self.graph)
+        # nx.draw_networkx_nodes(self.graph,
+        #                        pos,
+        #                        node_color='steelblue',
+        #                        nodelist=self.core_nodes)
+        # nx.draw_networkx_nodes(self.graph,
+        #                        pos,
+        #                        node_color='g',
+        #                        nodelist=self.entry_nodes)
+        # nx.draw_networkx_nodes(self.graph,
+        #                        pos,
+        #                        node_color='r',
+        #                        nodelist=self.exit_nodes)
+        ns = self.get_node_sizes()
+        nc = self.get_node_colors()
         nx.draw_networkx_nodes(self.graph,
                                pos,
-                               node_color='steelblue',
-                               nodelist=self.core_nodes)
-        nx.draw_networkx_nodes(self.graph,
-                               pos,
-                               node_color='g',
-                               nodelist=self.entry_nodes)
-        nx.draw_networkx_nodes(self.graph,
-                               pos,
-                               node_color='r',
-                               nodelist=self.exit_nodes)
+                               node_color=nc,
+                               node_size=ns)
+        h, actor_pos = self.actors_position(pos)
+        nx.draw_networkx_nodes(h, actor_pos, node_size=20, node_color='black', alpha=0.5)
 
         nx.draw_networkx_labels(self.graph, pos, font_color='w')
         nx.draw_networkx_edges(self.graph, pos)
@@ -122,7 +168,7 @@ class RandGraph:
         green_patch = mpatches.Patch(color='g', label='Start nodes')
 
         plt.legend(handles=[green_patch,blue_patch,red_patch])
-        plt.show()
+        # plt.show()
 
     def _rand_edges(self):
         for _ in range(self.n_paths):
