@@ -1,11 +1,10 @@
 import sys
-import random
 sys.path.append('../src/')
 from random_graph import RandGraph
 from deep_q_learning import DQN
 import matplotlib.pyplot as plt
 import pylab
-import pandas as pd
+
 
 g = RandGraph(graph_type='simple', actors=1000)
 h = RandGraph(graph_type='simple', actors=1000)
