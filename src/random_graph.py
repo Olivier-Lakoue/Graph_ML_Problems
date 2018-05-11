@@ -138,7 +138,7 @@ class RandGraph:
                 node_colors.append('black')
         return node_colors
 
-    def plot(self, fig_size=None):
+    def plot(self, legend=True, fig_size=None):
         if fig_size:
             plt.figure(figsize=fig_size)
         pos = nx.kamada_kawai_layout(self.graph)
@@ -160,12 +160,12 @@ class RandGraph:
         red_patch = mpatches.Patch(color='r', label='Exit nodes')
         green_patch = mpatches.Patch(color='g', label='Start nodes')
         orange_patch = mpatches.Patch(color='orange', label='Moving actors')
-
-        plt.legend(handles=[green_patch,
-                            blue_patch,
-                            purple_patch,
-                            red_patch,
-                            orange_patch])
+        if legend:
+            plt.legend(handles=[green_patch,
+                                blue_patch,
+                                purple_patch,
+                                red_patch,
+                                orange_patch])
         # plt.show()
 
     def _rand_edges(self):

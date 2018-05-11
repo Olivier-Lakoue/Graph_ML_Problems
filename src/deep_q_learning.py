@@ -1,8 +1,12 @@
 import numpy as np
 from itertools import combinations
 from random import randint
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.layers import Dense, Input, multiply
+import os
+import time
+from glob import glob
+import pickle
 
 class Memory():
     """
@@ -75,14 +79,14 @@ class ActionSpace():
     """
     One hot encoding of actions combinations.
     """
-    def __init__(self, graph):
+    def __init__(self, rand_graph):
         """
         Get the core_nodes from the submited instance of RandGraph() to
         produce all the combinations of core_nodes. Encode the combination
         vector as one_hot vector.
-        :param graph: RandGraph() instance
+        :param rand_graph: RandGraph() instance
         """
-        self.nodes = graph.core_nodes
+        self.nodes = rand_graph.core_nodes
         self.combinations = self.action_comb()
 
     def action_comb(self):
@@ -132,7 +136,7 @@ class DQN():
     """
     Deep Q_learning model an accessory functions.
     """
-    def __init__(self, graph, gamma=.9, batch_size=32, mem_size=10000):
+    def __init__(self, rand_graph, gamma=.9, batch_size=32, mem_size=10000):
         """
         Initial model
         :param length_states: int
@@ -143,11 +147,11 @@ class DQN():
         """
         self.gamma = gamma
         self.batch_size = batch_size
-        self.graph = graph
-        self.action_space = ActionSpace(graph)
+        self.rand_graph = rand_graph
+        self.action_space = ActionSpace(rand_graph)
         action = self.action_space.sample()
         self.length_actions = action.shape[1]
-        self.length_states = len(graph.core_nodes)
+        self.length_states = len(rand_graph.core_nodes)
         self.model = self.create_model(self.length_states, self.length_actions)
         self.memory = Memory(mem_size, self.length_states, self.length_actions)
         self.total_rewards = []
@@ -193,7 +197,7 @@ class DQN():
             action = self.action_space.get_action(self.model, epsilon, state)
             # Act on the graph
             n = self.action_space.get_nodes(action)
-            next_state, reward = self.graph.action(n)
+            next_state, reward = self.rand_graph.action(n)
 
             # remember
             self.memory.load(state, action, next_state, reward)
@@ -206,3 +210,41 @@ class DQN():
 
             # prepare for the next step
             state = next_state
+
+    def save(self, new_folder=False):
+        if new_folder:
+            date = time.strftime("%Y_%m_%d_%H_%M")
+            os.mkdir('../models/' + date)
+            path = '../models/' + date + '/'
+            self.model.save(path + 'model.h5')
+
+            with open(path + 'actionspace.pkl', 'wb') as f:
+                pickle.dump(self.action_space, f)
+        else:
+            try:
+                latest = glob('../models/*/')[-1]
+                self.model.save(latest + 'model.h5')
+
+                with open(latest + 'actionspace.pkl', 'wb') as f:
+                    pickle.dump(self.action_space, f)
+            except IndexError:
+                print('''Model not saved.\nYou need to create a new folder using the parameter:\nnew_folder=True.''')
+
+    def load(self):
+        try:
+            latest = glob('../models/*/')[-1]
+            self.model = load_model(latest + 'model.h5')
+
+            with open(latest + 'actionspace.pkl', 'rb') as f:
+                self.action_space = pickle.load(f)
+        except IndexError:
+            print('Model not found.')
+
+    def predict(self, state):
+        action = self.action_space.sample()
+        q_val = self.model.predict([state, np.ones_like(action)])
+        idx = np.argmax(q_val)
+        act_vect = np.zeros_like(action)
+        act_vect[:, idx] = 1.
+        return self.action_space.get_nodes(act_vect)
+
