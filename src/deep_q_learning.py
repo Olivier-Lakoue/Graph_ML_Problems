@@ -155,6 +155,7 @@ class DQN():
         self.model = self.create_model(self.length_states, self.length_actions)
         self.memory = Memory(mem_size, self.length_states, self.length_actions)
         self.total_rewards = []
+        self.save(new_folder=True)
 
     def create_model(self, nb_values, nb_actions):
         values_input = Input((nb_values,), name='values')
@@ -210,6 +211,7 @@ class DQN():
 
             # prepare for the next step
             state = next_state
+        self.save()
 
     def save(self, new_folder=False):
         if new_folder:
@@ -217,14 +219,12 @@ class DQN():
             os.mkdir('../models/' + date)
             path = '../models/' + date + '/'
             self.model.save(path + 'model.h5')
-
             with open(path + 'actionspace.pkl', 'wb') as f:
                 pickle.dump(self.action_space, f)
         else:
             try:
                 latest = glob('../models/*/')[-1]
                 self.model.save(latest + 'model.h5')
-
                 with open(latest + 'actionspace.pkl', 'wb') as f:
                     pickle.dump(self.action_space, f)
             except IndexError:
@@ -234,7 +234,6 @@ class DQN():
         try:
             latest = glob('../models/*/')[-1]
             self.model = load_model(latest + 'model.h5')
-
             with open(latest + 'actionspace.pkl', 'rb') as f:
                 self.action_space = pickle.load(f)
         except IndexError:
