@@ -15,7 +15,7 @@ dqn_h.load()
 plt.style.use('seaborn-talk')
 
 
-for i in range(30):
+for i in range(200):
 
     pylab.clf()
 
@@ -35,4 +35,4 @@ for i in range(30):
     h.plot(legend=False)
 
     pylab.draw()
-    plt.pause(0.3)
+    plt.pause(0.2)

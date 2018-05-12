@@ -249,17 +249,11 @@ class RandGraph:
                 self.moving_actors.pop(k)
         self.actors = actor_copy
 
-    def get_node_capa(self, node):
         if (node in self.core_nodes) and (self.graph.nodes[node]['actors']):
             stack = len(self.graph.nodes[node]['actors'])
             return stack < self.graph.nodes[node]['capacity']
         else:
             return True
-
-    # def actor_position(self, key):
-    #     for n in self.graph.nodes(data=True):
-    #         if (n[1]['actors']) and key in n[1]['actors']:
-    #             return n[0]
 
     def move_actors(self, blocked_nodes):
         actors = self.moving_actors.copy()
@@ -318,33 +312,7 @@ class RandGraph:
         self.move_actors(blocked_nodes)
         values = self.get_loading()
         reward = self.get_reward()
-        # cur_rwd = self.current_reward
-        # self.current_reward = reward
-        # if self.step_counter != 0:
-        #     reward = reward - cur_rwd
-        # else:
-        #     reward = 0
         return values, reward
-
-    # def get_reward(self):
-    #     '''
-    #     Number of actors in the output nodes
-    #     :return:
-    #     '''
-    #     reward = []
-    #     for x in self.exit_nodes:
-    #         if self.graph.nodes[x]['actors']:
-    #             reward.append(len(self.graph.nodes(data=True)[x]['actors']))
-    #     return np.sum(reward)
-
-    # def get_reward(self):
-    #     '''
-    #     Ratio of nodes saturation
-    #     :return:
-    #     '''
-    #     values = self.get_loading()
-    #     reward = len(self.core_nodes) / np.sum(values + 1.)
-    #     return reward
 
     def get_reward(self):
         """

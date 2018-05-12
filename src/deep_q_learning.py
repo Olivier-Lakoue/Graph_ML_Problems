@@ -155,7 +155,7 @@ class DQN():
         self.model = self.create_model(self.length_states, self.length_actions)
         self.memory = Memory(mem_size, self.length_states, self.length_actions)
         self.total_rewards = []
-        self.save(new_folder=True)
+
 
     def create_model(self, nb_values, nb_actions):
         values_input = Input((nb_values,), name='values')
@@ -190,6 +190,7 @@ class DQN():
         self.model.fit([states, actions], out, batch_size=self.batch_size, verbose=0)
 
     def train(self, steps):
+        self.save(new_folder=True)
         # initial state
         state = np.zeros((1,self.length_states))
         for step in range(steps):
