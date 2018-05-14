@@ -22,9 +22,9 @@ It is a complex system problem with no definitive solution.
 Negative impacts: wasting time, delays, wasted fuel, 
 air pollution, vehicles maintenance, human health, emergency 
 services, real estate price.
-Economic loss: NYC (33.7 M$, 8,6m pop, 784km2), 
-LA (19.2 M$, 3.98m pop, 1210 km2),
- SF (10.6M$, 0.884m pop, 121.4 km2)
+Economic loss: NYC (33.7 M$, 8,6m pop, 1214km2, 91 h/y), 
+LA (19.2 M$, 3.98m pop, 1302 km2, 102 h/y),
+ SF (10.6M$, 0.884m pop, 600 km2, 79 h/y)
 Natural networks, such as biological or ecological networks exists
 suggesting that regulation mechanisms discovered in nature could
 help us design better traffic regulation.
