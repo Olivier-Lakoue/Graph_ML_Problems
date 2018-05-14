@@ -249,6 +249,7 @@ class RandGraph:
                 self.moving_actors.pop(k)
         self.actors = actor_copy
 
+    def get_node_capa(self, node):
         if (node in self.core_nodes) and (self.graph.nodes[node]['actors']):
             stack = len(self.graph.nodes[node]['actors'])
             return stack < self.graph.nodes[node]['capacity']
