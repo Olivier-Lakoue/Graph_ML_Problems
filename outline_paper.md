@@ -44,12 +44,53 @@ researchers to obtain spectacular results.
 
 
 ##### Simulation
+* __network modeling__
 
+According to the definition of traffic congestion, we care about 
+the **number of actors** going through a **road** during a 
+**time** period.
+
+* roads will be nodes with a max capacity of actors
+* actors will be a simple class defining a network path through
+the graph at inception
+* time will be model by moving actors to the next node in their path
+at each timstep.
+
+* __analyse graph congestion__
+    * grid search of parameters 
+        * moving actors : 2 - 20
+        * paths : 5 - 50
+        * entry nodes : 2 - 10 
+        * exit nodes : 2 - 10
+        * core nodes : 5 - 50
+
+* __seasonal variation of actor loading__
+Make the traffic flows more realistic and less predictable by regression.
 
 ##### Prediction
+* __linear regression__
+
+* __neural net__
+
+* __RNN__
 
 
 ##### Training on a simple network
+* __define observation__
+* __define actions__
+* __define reward__
+
+* __Find base line__
+
+* __define memory__
+
+* __define deep q-learning__
+
+* __training__
+
+* __plotting__
 
 
 ##### Discussion
+
+the importance of reward function in RL is similar to the loss function in SL.
