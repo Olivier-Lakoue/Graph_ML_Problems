@@ -65,3 +65,36 @@ of network traffic and its congestion. It is thus tempting to
 develop some empirical predictive models that could help us
 regulate traffic flows with the goal of limiting traffic congestion.
 
+Current research is focused on traffic light control at intersection.
+In this work, we would like to consider the traffic network (or sub-network)
+as whole for the reinforcement learning problem. Here, we are more 
+interested in optimizing the congestion level of the whole network, 
+than optimizing travel time for the users of the network. Indeed,
+ it is likely that optimizing one traffic light at an intersection 
+ could cause traffic congestion at another intersection.The rational
+behind this approach is that traffic network congestion is dependent
+on both network architecture and usage.  We anticipate that a RL agent 
+will make the best use of the whole network usage compared to informations
+ at intersections only. 
+ 
+### Simulation
+
+#### Network modelling
+
+According to the definition of traffic congestion, we care about 
+the **number of actors** going through a **road** during a 
+**time** period.
+
+The unit is the road. Roads can have different sizes and contains
+different number of actors. We choose to represent the roads as nodes
+and intersections as edges to easily extract roads informations. Nodes
+have a single index while edges have 2 indices (node1,node2).
+
+We defined a class for the generation of random graph with fixed number of
+entry, exit and core nodes. The creation of edges are randomized and 
+parameterized with the number of paths and the path depths.
+
+![rand_graph](/fig/random_graph.png)
+
+Core nodes have a max capacity visualized by the size of the node.
+

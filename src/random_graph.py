@@ -138,7 +138,7 @@ class RandGraph:
                 node_colors.append('black')
         return node_colors
 
-    def plot(self, legend=True, fig_size=None):
+    def plot(self, legend=True, fig_size=None, save_file=None):
         if fig_size:
             plt.figure(figsize=fig_size)
         pos = nx.kamada_kawai_layout(self.graph)
@@ -167,6 +167,8 @@ class RandGraph:
                                 red_patch,
                                 orange_patch])
         # plt.show()
+        if save_file:
+            plt.savefig(save_file)
 
     def _rand_edges(self):
         for _ in range(self.n_paths):
