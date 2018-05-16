@@ -106,7 +106,8 @@ the congestion of the network.
 
 Nodes are connected by edges which have an adjustable parameter indicating
 the number of actors going through that intersection in a timestep. This 
-parameter should be in `[1,inf)` to avoid blocking totally the intersection.
+parameter should be in `[1,Max_flow - degree - 1]` to avoid blocking 
+totally the intersection.
 
 #### State space
 
@@ -127,8 +128,35 @@ should be constant. This mean that the total number of cars moving at an
 intersection in a cycle (step) is constant. Since all actors need to stop
 at intersection, going through the intersection is a constant time (same speed).
 Factor that can influence the flow at intersections are the widths of 
-connected roads. This flow is limited by the smallest capacity of the two 
-connected nodes (1 to 3 lanes).Action are used to prioritize the traffic 
-at intersections.
+connected roads. This flow is limited by the smallest width of the two 
+connected nodes (1 to 3 lanes). Actions are used to prioritize the traffic 
+at intersections. Action will be for each node (edge, percent). The flow through
+the other edges of the same intersection should be adjusted accordingly.
 
+#### Rewards
 
+Reward design is a complex task. The scalar representing the reward that we will
+use to guide our reinforcement learning machine must summarize the behaviour
+we expect to achieve.
+
+Our expectations are:
+- all entering actors can exit the network
+- low time travel (at best 1 node per timestep) is better
+- no nodes reach full capacity
+
+It combines the network outputs in number of actors compared to previous step
+and the fluidity of the network (1 - mean congestion).
+
+Another reward measure to test would be the mean number of steps to go through
+enter to exit node for each actors. At timestep t, we will collect all starting times
+of actors in exit nodes and compute the mean travel time. While the previous reward
+is immediate, this one is delayed to a future time window.
+
+#### Memory
+
+Deep nets are trained with data batches. In the context of reinforcement 
+learning, it means that we cannot train only on the data of the current 
+timestep. We need to store experiences in a memory and draw random
+samples at training time. While current approaches use an independant
+memory table to store (states, actions, reward, states+1), in this context
+of a graph, it will be advantageous to store states in nodes and actions in edges.
