@@ -1,5 +1,4 @@
 
-
 ### Traffic congestion
 
 Traffic congestion, also known as traffic jam, is a complex problem with no 
@@ -94,7 +93,39 @@ We defined a class for the generation of random graph with fixed number of
 entry, exit and core nodes. The creation of edges are randomized and 
 parameterized with the number of paths and the path depths.
 
-![rand_graph](/fig/random_graph.png)
+![rand_graph](fig/random_graph.png)
 
-Core nodes have a max capacity visualized by the size of the node.
+Core nodes have a max capacity visualized by the size of the node. This
+max capacity indicates how many actors can be in that node in a time step.
+We can parameterize further this measure by its length * width.
 
+Actors are moving from an entry node to an exit node chosen randomly. The 
+actor follow the shortest path. Depending on the structure of the network, 
+many actors may be in the same nodes at the same time, which will increase
+the congestion of the network.
+
+Nodes are connected by edges which have an adjustable parameter indicating
+the number of actors going through that intersection in a timestep. This 
+parameter should be in `[1,inf)` to avoid blocking totally the intersection.
+
+#### State space
+
+The measure of congestion of each nodes is assessed by the number of actors 
+in that node divided by its max capacity. This is similar to what we can 
+observe on Google map with the traffic feature on, where roads are colored
+from green to dark-red (4 levels) to indicate congestion of each road. This measure
+is derived from the density of mobile phone users. This annonymized data can be
+accessed in realtime by contracting with mobile phone providers. This may be more
+economically viable compared to cameras and IT infrastructure for all traffic
+lights in the city. 
+
+#### Action space
+
+The network flow will be adjusted by issuing a bounded percentage change
+in edge capacity [-0.5; +0.5]. The sum capacity of output edges from one node
+should be constant. This mean that the total number of cars moving at an 
+intersection in a cycle (step) is constant. Since all actors need to stop
+at intersection, going through the intersection is a constant time (same speed).
+Factor that can influence the flow at intersections are the widths of 
+connected roads. This flow is limited by the smallest capacity of the two 
+connected nodes (1 to 3 lanes).
