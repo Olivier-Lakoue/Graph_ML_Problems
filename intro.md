@@ -128,4 +128,7 @@ intersection in a cycle (step) is constant. Since all actors need to stop
 at intersection, going through the intersection is a constant time (same speed).
 Factor that can influence the flow at intersections are the widths of 
 connected roads. This flow is limited by the smallest capacity of the two 
-connected nodes (1 to 3 lanes).
+connected nodes (1 to 3 lanes).Action are used to prioritize the traffic 
+at intersections.
+
+
