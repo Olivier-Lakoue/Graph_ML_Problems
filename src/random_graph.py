@@ -35,12 +35,12 @@ class RandGraph:
             self.graph.add_nodes_from([(x, {'capacity': capa[i]}) for i,x in enumerate(self.core_nodes)])
             nx.set_node_attributes(self.graph, None, 'actors')
             edges = [
-                (1, 3),
-                (2, 4),
-                (3, 5),
-                (4, 5),
-                (5, 6),
-                (6, 7)
+                (1, 3, {'pass_through': 2}),
+                (2, 4, {'pass_through': 2}),
+                (3, 5, {'pass_through': 2}),
+                (4, 5, {'pass_through': 2}),
+                (5, 6, {'pass_through': 2}),
+                (6, 7, {'pass_through': 2})
             ]
             self.graph.add_edges_from(edges)
 
@@ -58,10 +58,10 @@ class RandGraph:
 
             # entry edges
             entry_edges = pd.read_csv('../data/entry_edges_Hongo_district.csv', header=None)
-            entry_edges_tpl = [(x[1], x[2]) for x in entry_edges.itertuples()]
+            entry_edges_tpl = [(x[1], x[2], {'pass_through': 2}) for x in entry_edges.itertuples()]
             # exit edges
             exit_edges = pd.read_csv('../data/exit_edges_Hongo_district.csv', header=None)
-            exit_edges_tpl = [(x[1], x[2]) for x in exit_edges.itertuples()]
+            exit_edges_tpl = [(x[1], x[2], {'pass_through': 2}) for x in exit_edges.itertuples()]
             # core nodes edges
             core_edges = pd.read_csv('../data/core_edge_list_Hongo_district.csv')
             edg_lst = []
@@ -70,7 +70,7 @@ class RandGraph:
                     head_val = core_edges['head_node'].values
                     tail_val = core_edges[col].values
                     edg_lst.append([(x, y) for x, y in zip(head_val, tail_val)])
-            core_edge_list = [(x[0], int(x[1])) for y in edg_lst for x in y if not math.isnan(float(x[1]))]
+            core_edge_list = [(x[0], int(x[1], {'pass_through': 2})) for y in edg_lst for x in y if not math.isnan(float(x[1]))]
             # add edges
             self.graph.add_edges_from(entry_edges_tpl)
             self.graph.add_edges_from(exit_edges_tpl)
@@ -259,12 +259,18 @@ class RandGraph:
             return True
 
     def move_actors(self, blocked_nodes):
+        # get list of pass_through values
+        pt_vals = {}
+        for edge in self.graph.edges(data=True):
+            pt_vals[edge] = np.round(self.graph.edges[edge[0],edge[1]]['pass_through'])
+
         actors = self.moving_actors.copy()
         if blocked_nodes:
             bn = blocked_nodes
         else:
             bn = []
-
+        #From the list of `moving_actors` we select only the number of actors
+        # in `prev_node` equals to `pass_through` from the (`prev_node`,`possible_node`) edge.
         for actor in actors:
             # find current node
             if actor in self.actor_position:
@@ -274,22 +280,25 @@ class RandGraph:
 
             # check if next node is full
             possible_node = self.moving_actors[actor].fetch_next()
-            # check that next_node is not in the list of blocked nodes
-            if possible_node and (possible_node not in bn):
-                if self.get_node_capa(possible_node):
-                    # remove id from current node
-                    if prev_node:
-                        self.remove_from_node(prev_node, actor)
-                    # find next node from the path
-                    self.moving_actors[actor].move()
-                    next_node = self.moving_actors[actor].get_position()
-                    # record position
-                    self.actor_position[actor] = next_node
-                    # add actor to the next node
-                    if next_node:
-                        self.update_node(next_node, actor)
-                    else:
-                        self.moving_actors.pop(actor)
+            # check pass_through value
+            if pt_vals[(prev_node, possible_node)] >= 1:
+                pt_vals[(prev_node, possible_node)] -= 1
+                # check that next_node is not in the list of blocked nodes
+                if possible_node and (possible_node not in bn):
+                    if self.get_node_capa(possible_node):
+                        # remove id from current node
+                        if prev_node:
+                            self.remove_from_node(prev_node, actor)
+                        # find next node from the path
+                        self.moving_actors[actor].move()
+                        next_node = self.moving_actors[actor].get_position()
+                        # record position
+                        self.actor_position[actor] = next_node
+                        # add actor to the next node
+                        if next_node:
+                            self.update_node(next_node, actor)
+                        else:
+                            self.moving_actors.pop(actor)
 
     def get_pass_through_values(self, edge):
         pt_vals = []
