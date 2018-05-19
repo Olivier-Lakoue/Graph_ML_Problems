@@ -183,7 +183,7 @@ class RandGraph:
             node1 = entry
             for _ in range(path_len):
                 node2 = choice(self.core_nodes)
-                edge_list.append((node1, node2))
+                edge_list.append((node1, node2, {'pass_through': randint(1,10)}))
                 node1 = node2
 
             # add paths to the graph
@@ -191,7 +191,7 @@ class RandGraph:
 
             # connect the last node to an exit
             exit_node = choice(self.exit_nodes)
-            self.graph.add_edge(node1, exit_node)
+            self.graph.add_edge(node1, exit_node, pass_through=randint(1,10))
 
     def update_node(self, node, actor):
         act_list = self.graph.nodes[node]['actors']
@@ -290,6 +290,61 @@ class RandGraph:
                         self.update_node(next_node, actor)
                     else:
                         self.moving_actors.pop(actor)
+
+    def get_pass_through_values(self, edge):
+        pt_vals = []
+        i = 0
+        idx = 0
+
+        origin, dest = edge
+        for n1, n2 in self.graph.edges(origin):
+            pt_vals.append(self.graph.edges[n1,n2]['pass_through'])
+            if n2 == dest:
+                idx = i
+            i += 1
+        return pt_vals, idx
+
+    def set_pass_through_values(self, pt_vals, node):
+        i = 0
+        for n1, n2 in self.graph.edges(node):
+            self.graph.edges[n1,n2]['pass_through'] = pt_vals[i]
+            i += 1
+
+    def update_pass_through_values(self, pt_vals, idx, value):
+        # vector of pass_through values
+        pt_vals = np.array(pt_vals)
+        # Exit if we only have one edge
+        if pt_vals.shape[-1] == 1:
+            return pt_vals
+
+        # mask for the target value
+        mask = np.ones_like(pt_vals)
+        inv_mask = np.zeros_like(pt_vals)
+        mask[idx] = 0
+        inv_mask[idx] = 1
+
+        # value update at index
+        updated_idx = pt_vals * inv_mask * value + pt_vals * inv_mask
+        # change other pass_through values proportionally
+        updated_remaining = pt_vals * mask - pt_vals * mask / np.sum(pt_vals * mask) * value
+
+        # all pass_through value must be > 1
+        if (np.sum(updated_idx) >= 1) & ((updated_remaining - mask) >= np.zeros_like(mask)).all():
+            # correct precision issue
+            epsilon = np.sum(pt_vals) - np.sum(updated_idx + updated_remaining)
+            i = np.argmax(updated_idx + updated_remaining)
+            epsilon_mask = np.zeros_like(pt_vals)
+            epsilon_mask[i] = epsilon
+            return updated_idx + updated_remaining + epsilon_mask
+        else:
+            return pt_vals
+
+    def change_pass_through(self, edge, value):
+        origin, dest = edge
+        pt_vals, idx = self.get_pass_through_values(edge)
+        updated_vals = self.update_pass_through_values(pt_vals, idx, value)
+        self.set_pass_through_values(updated_vals, origin)
+
 
     def get_loading(self):
         '''
