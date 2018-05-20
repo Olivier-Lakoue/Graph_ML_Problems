@@ -95,6 +95,8 @@ class RandGraph:
         self.actor_position = {}
         self.step_counter = 0
         self.current_reward = 0
+        n = [l[0] for l in self.graph.out_degree() if l[1] > 1]
+        self.controllable_intersections = list(self.graph.edges(n))
 
     def actors_position(self, pos):
         h = nx.Graph()
@@ -258,17 +260,17 @@ class RandGraph:
         else:
             return True
 
-    def move_actors(self, blocked_nodes):
+    def move_actors(self):
         # get list of pass_through values
         pt_vals = {}
         for edge in self.graph.edges(data=True):
-            pt_vals[edge] = np.round(self.graph.edges[edge[0],edge[1]]['pass_through'])
+            pt_vals[(edge[0], edge[1])] = np.round(edge[2]['pass_through'])
 
         actors = self.moving_actors.copy()
-        if blocked_nodes:
-            bn = blocked_nodes
-        else:
-            bn = []
+        # if blocked_nodes:
+        #     bn = blocked_nodes
+        # else:
+        #     bn = []
         #From the list of `moving_actors` we select only the number of actors
         # in `prev_node` equals to `pass_through` from the (`prev_node`,`possible_node`) edge.
         for actor in actors:
@@ -280,25 +282,27 @@ class RandGraph:
 
             # check if next node is full
             possible_node = self.moving_actors[actor].fetch_next()
+
             # check pass_through value
-            if pt_vals[(prev_node, possible_node)] >= 1:
+            if prev_node and possible_node and pt_vals[(prev_node, possible_node)] >= 1:
+                # consume
                 pt_vals[(prev_node, possible_node)] -= 1
-                # check that next_node is not in the list of blocked nodes
-                if possible_node and (possible_node not in bn):
-                    if self.get_node_capa(possible_node):
-                        # remove id from current node
-                        if prev_node:
-                            self.remove_from_node(prev_node, actor)
-                        # find next node from the path
-                        self.moving_actors[actor].move()
-                        next_node = self.moving_actors[actor].get_position()
-                        # record position
-                        self.actor_position[actor] = next_node
-                        # add actor to the next node
-                        if next_node:
-                            self.update_node(next_node, actor)
-                        else:
-                            self.moving_actors.pop(actor)
+
+            if possible_node:
+                if self.get_node_capa(possible_node):
+                    # remove id from current node
+                    if prev_node:
+                        self.remove_from_node(prev_node, actor)
+                    # find next node from the path
+                    self.moving_actors[actor].move()
+                    next_node = self.moving_actors[actor].get_position()
+                    # record position
+                    self.actor_position[actor] = next_node
+                    # add actor to the next node
+                    if next_node:
+                        self.update_node(next_node, actor)
+                    else:
+                        self.moving_actors.pop(actor)
 
     def get_pass_through_values(self, edge):
         pt_vals = []
@@ -368,7 +372,7 @@ class RandGraph:
                     values.append(0.0)
         return np.array([values])
 
-    def action(self, blocked_nodes=None):
+    def action(self, act, val):
         '''
         Block some nodes and get the next state and reward.
         :param blocked_nodes:
@@ -376,7 +380,9 @@ class RandGraph:
         '''
         self.init_actors(self.step_counter)
         self.step_counter += 1
-        self.move_actors(blocked_nodes)
+        action = self.controllable_intersections[act]
+        self.change_pass_through(action, val)
+        self.move_actors()
         values = self.get_loading()
         reward = self.get_reward()
         return values, reward
