@@ -44,6 +44,30 @@ class RandGraph:
             ]
             self.graph.add_edges_from(edges)
 
+        elif graph_type == 'medium':
+            self.entry_nodes = [1, 2]
+            self.exit_nodes = [8, 9]
+            self.core_nodes = [3, 4, 5, 6, 7]
+            self.graph = nx.DiGraph()
+            capa = [5, 10, 3, 13, 4]
+            self.graph.add_nodes_from(self.entry_nodes)
+            self.graph.add_nodes_from(self.exit_nodes)
+            self.graph.add_nodes_from([(x, {'capacity': capa[i]}) for i, x in enumerate(self.core_nodes)])
+            nx.set_node_attributes(self.graph, None, 'actors')
+            edges = [
+                (1, 3, {'pass_through': 3}),
+                (2, 4, {'pass_through': 3}),
+                (3, 5, {'pass_through': 3}),
+                (3, 6, {'pass_through': 3}),
+                (4, 6, {'pass_through': 3}),
+                (6, 5, {'pass_through': 3}),
+                (6, 7, {'pass_through': 3}),
+                (5, 8, {'pass_through': 3}),
+                (7, 9, {'pass_through': 3}),
+
+            ]
+            self.graph.add_edges_from(edges)
+
         elif graph_type == 'hongo_district':
             self.entry_nodes = list(range(1, 11))
             self.exit_nodes = list(range(11, 24))
