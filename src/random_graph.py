@@ -290,6 +290,9 @@ class RandGraph:
         for edge in self.graph.edges(data=True):
             pt_vals[(edge[0], edge[1])] = np.round(edge[2]['pass_through'])
 
+        # add one step to the travel_time
+        for actor in self.moving_actors.values():
+            actor.travel_time += 1
         actors = self.moving_actors.copy()
         # if blocked_nodes:
         #     bn = blocked_nodes
@@ -447,6 +450,7 @@ class Actor:
         self.graph = g
         self.entry_nodes = entry_nodes
         self.exit_nodes = exit_nodes
+        self.travel_time = 0
 
     def move(self):
         # pop one node from self.path
