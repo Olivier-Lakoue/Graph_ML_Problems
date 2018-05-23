@@ -151,7 +151,7 @@ We can test the addition of mean output delay for actors. Each actor can record 
 If an actor is stuck in the network it should penalize the agent over time. Meanwhile, when actors
 exit the network, it will decrease mean time travel. The normalization factor could be the path length.
 The measure could then be the path_len / travel_time. The highest the better. We could then combine
-this mean speed measure with the fludity of the network for a reward.
+this mean speed measure with the fluidity of the network for a reward.
 
 Another reward measure to test would be the mean number of steps to go through
 enter to exit node for each actors. At timestep t, we will collect all starting times
