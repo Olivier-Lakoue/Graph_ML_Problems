@@ -294,10 +294,7 @@ class RandGraph:
         for actor in self.moving_actors.values():
             actor.travel_time += 1
         actors = self.moving_actors.copy()
-        # if blocked_nodes:
-        #     bn = blocked_nodes
-        # else:
-        #     bn = []
+
         #From the list of `moving_actors` we select only the number of actors
         # in `prev_node` equals to `pass_through` from the (`prev_node`,`possible_node`) edge.
         for actor in actors:
@@ -306,6 +303,12 @@ class RandGraph:
                 prev_node = self.actor_position[actor]
             else:
                 prev_node = None
+
+            # remove actors from exit nodes
+            if prev_node in self.exit_nodes:
+                self.moving_actors.pop(actor)
+                self.remove_from_node(prev_node, actor)
+                continue
 
             # check if next node is full
             possible_node = self.moving_actors[actor].fetch_next()
@@ -399,7 +402,7 @@ class RandGraph:
                     values.append(0.0)
         return np.array([values])
 
-    def action(self, act, val):
+    def action(self, act, val, continuous=False):
         '''
         Block some nodes and get the next state and reward.
         :param blocked_nodes:
@@ -411,25 +414,39 @@ class RandGraph:
         self.change_pass_through(action, val)
         self.move_actors()
         values = self.get_loading()
-        reward = self.get_reward()
+        reward = self.get_reward(continuous)
         return values, reward
 
-    def get_reward(self):
+    # def get_reward(self):
+    #     """
+    #     Reward as a combination of output and congestion level
+    #     :return:
+    #     """
+    #     # number of actors out
+    #     out = sum([len(self.graph.node[n]['actors']) for n
+    #                in self.exit_nodes
+    #                if self.graph.node[n]['actors']])
+    #     # saturation of the core nodes
+    #     values = self.get_loading()
+    #     congestion = 1 - np.mean(values)
+    #     # reward combine the evolution of the output and congestion level
+    #     reward = (out - self.current_reward) * congestion
+    #     self.current_reward = out
+    #     return reward
+    def get_reward(self, continuous=False):
         """
-        Reward as a combination of output and congestion level
+        +1 reward for each node under 0.8 congestion level and -1 otherwise
         :return:
         """
-        # number of actors out
-        out = sum([len(self.graph.node[n]['actors']) for n
-                   in self.exit_nodes
-                   if self.graph.node[n]['actors']])
-        # saturation of the core nodes
-        values = self.get_loading()
-        congestion = 1 - np.mean(values)
-        # reward combine the evolution of the output and congestion level
-        reward = (out - self.current_reward) * congestion
-        self.current_reward = out
-        return reward
+        if continuous:
+            values = self.get_loading()
+            vals = np.sum(0.5 - values)
+            return vals
+        else:
+            values = self.get_loading()
+            vals = np.where(values < 0.8, 1, -1)
+            return np.sum(vals)
+
 
     def step(self, n=10):
         data = np.zeros((1, len(self.core_nodes)))

@@ -166,3 +166,4 @@ timestep. We need to store experiences in a memory and draw random
 samples at training time. While current approaches use an independant
 memory table to store (states, actions, reward, states+1), in this context
 of a graph, it will be advantageous to store states in nodes and actions in edges.
+ 
