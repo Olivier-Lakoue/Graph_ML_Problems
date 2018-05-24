@@ -335,6 +335,11 @@ class RandGraph:
                         self.moving_actors.pop(actor)
 
     def get_pass_through_values(self, edge):
+        """
+        Return the pass_through values from all the outgoing edges of the edge starting node
+        :param edge: tuple
+        :return: list of pass_through values and index of the requested edge
+        """
         pt_vals = []
         i = 0
         idx = 0
