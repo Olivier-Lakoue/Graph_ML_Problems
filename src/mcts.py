@@ -4,7 +4,6 @@ import random
 class GridEnv():
     def __init__(self):
         self.done = False
-        self.steps = 20
         self.start = (0,0)
         self.goal = (6,6)
         self.win = False
@@ -30,14 +29,11 @@ class GridEnv():
                 and self.grid[i, j] >= 0]
 
     def action(self, next_position):
-        if self.steps > 0:
-            self.steps -= 1
-            if self.grid[next_position] == 0:
-                self.position = self.start
-            elif next_position == self.goal:
-                self.win = True
-                self.done = True
-            else:
-                self.position = next_position
-        else:
+        if self.grid[next_position] == 0:
+            self.position = self.start
+        elif next_position == self.goal:
+            self.win = True
             self.done = True
+        else:
+            self.position = next_position
+
