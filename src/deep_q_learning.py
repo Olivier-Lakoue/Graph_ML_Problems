@@ -35,11 +35,7 @@ class Memory():
     def load(self, state, actions, next_state, reward):
         """
         Store state, actions, next_state and reward arrays into the circular buffer memory
-        :param state:
-        :param actions:
-        :param next_state:
-        :param reward:
-        :return:
+
         """
         # concatenate values
         values = np.hstack((

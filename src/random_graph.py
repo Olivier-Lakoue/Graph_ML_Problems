@@ -94,7 +94,7 @@ class RandGraph:
                     head_val = core_edges['head_node'].values
                     tail_val = core_edges[col].values
                     edg_lst.append([(x, y) for x, y in zip(head_val, tail_val)])
-            core_edge_list = [(x[0], int(x[1], {'pass_through': 2})) for y in edg_lst for x in y if not math.isnan(float(x[1]))]
+            core_edge_list = [(x[0], int(x[1]), {'pass_through': 2}) for y in edg_lst for x in y if not math.isnan(float(x[1]))]
             # add edges
             self.graph.add_edges_from(entry_edges_tpl)
             self.graph.add_edges_from(exit_edges_tpl)
@@ -256,6 +256,12 @@ class RandGraph:
         return int(y[0])
 
     def init_actors(self, step_nb):
+        """
+        Get a randomized number of actors to enter the network and join the dict
+        of moving_actors
+        :param step_nb:
+        :return:
+        """
         actor_copy = self.actors
 
         # get the randomized number of moving actors
@@ -278,6 +284,11 @@ class RandGraph:
         self.actors = actor_copy
 
     def get_node_capa(self, node):
+        """
+        Return a bool for a node that has reached full capacity
+        :param node:
+        :return:
+        """
         if (node in self.core_nodes) and (self.graph.nodes[node]['actors']):
             stack = len(self.graph.nodes[node]['actors'])
             return stack < self.graph.nodes[node]['capacity']
@@ -388,9 +399,18 @@ class RandGraph:
             return pt_vals
 
     def change_pass_through(self, edge, value):
+        """
+        The provided edge and concurrent edges are updated according to the provided value.
+        :param edge:
+        :param value:
+        :return:
+        """
         origin, dest = edge
+        # Current values of all concurrent edges
         pt_vals, idx = self.get_pass_through_values(edge)
+        # update values
         updated_vals = self.update_pass_through_values(pt_vals, idx, value)
+        # set values
         self.set_pass_through_values(updated_vals, origin)
 
 
@@ -407,10 +427,10 @@ class RandGraph:
                     values.append(0.0)
         return np.array([values])
 
-    def action(self, act, val, continuous=False):
+    def action(self, act, val, continuous=True):
         '''
-        Block some nodes and get the next state and reward.
-        :param blocked_nodes:
+        Action on one node with the provided value
+
         :return: next_state and reward
         '''
         self.init_actors(self.step_counter)
@@ -422,25 +442,12 @@ class RandGraph:
         reward = self.get_reward(continuous)
         return values, reward
 
-    # def get_reward(self):
-    #     """
-    #     Reward as a combination of output and congestion level
-    #     :return:
-    #     """
-    #     # number of actors out
-    #     out = sum([len(self.graph.node[n]['actors']) for n
-    #                in self.exit_nodes
-    #                if self.graph.node[n]['actors']])
-    #     # saturation of the core nodes
-    #     values = self.get_loading()
-    #     congestion = 1 - np.mean(values)
-    #     # reward combine the evolution of the output and congestion level
-    #     reward = (out - self.current_reward) * congestion
-    #     self.current_reward = out
-    #     return reward
-    def get_reward(self, continuous=False):
+
+    def get_reward(self, continuous=True):
         """
-        +1 reward for each node under 0.8 congestion level and -1 otherwise
+        Continuous reward True returns negative rewards for congestion level greater than 0.5.
+        Continuous reward False return discreet +1 reward for each node under 0.8 congestion level
+        and -1 otherwise.
         :return:
         """
         if continuous:
@@ -458,7 +465,7 @@ class RandGraph:
         for i in range(n):
             curr_prog = round(i/float(n),1)/0.1
             self.init_actors(step_nb=i)
-            self.move_actors([])
+            self.move_actors()
             values = self.get_loading()
             data = np.vstack((data, values))
 
