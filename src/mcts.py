@@ -36,6 +36,7 @@ class GridEnv():
                 self.position = self.start
             elif next_position == self.goal:
                 self.win = True
+                self.done = True
             else:
                 self.position = next_position
         else:
