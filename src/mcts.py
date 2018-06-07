@@ -14,14 +14,14 @@ class GridEnv():
         self.win = False
         self.position = self.start
         self.grid = np.array([
-                    [1, 1, 0, 1, 1, 1, 1],
-                    [0, 1, 0, 1, 1, 0, 1],
-                    [1, 1, 1, 0, 1, 0, 1],
-                    [1, 0, 1, 1, 1, 0, 1],
-                    [1, 1, 1, 1, 0, 0, 1],
-                    [0, 0, 0, 1, 0, 1, 1],
-                    [1, 1, 1, 1, 0, 1, 1]
-                ])
+                        [1, 1, 0, 1, 1, 1, 1],
+                        [0, 1, 0, 1, 1, 0, 1],
+                        [1, 1, 1, 0, 1, 0, 1],
+                        [1, 0, 1, 1, 1, 0, 1],
+                        [1, 1, 1, 1, 0, 0, 1],
+                        [0, 0, 0, 1, 0, 1, 1],
+                        [1, 1, 1, 1, 0, 1, 1]
+                    ])
         self.moves = np.array([[-1, 0],
                                [1, 0],
                                [0, -1],
@@ -42,13 +42,15 @@ class GridEnv():
         else:
             self.position = next_position
 
+
 class MCTS():
-    def __init__(self):
+    def __init__(self, C=2):
         self.g = nx.DiGraph()
-        self.C = np.sqrt(2)
+        self.C = np.sqrt(C)
         self.env = GridEnv()
         self.path = []
         self.g.add_node(self.env.start, wins=0, plays=0)
+
 
     def expand(self, current, positions):
         self.g.add_nodes_from(positions, wins=0, plays=0)
@@ -97,16 +99,18 @@ class MCTS():
 
             if t % step == 0:
                 self.plot(strategy)
+
             if t == (max_moves - 1):
                 plt.pause(5)
 
     def plot(self, strategy):
         pylab.clf()
         if strategy == 'uct':
-            plt.title('Monte Carlo Tree Search Strategy')
+            plt.title('Monte Carlo Tree Search Strategy (C = %.1f)' % self.C)
         else:
             plt.title(' %s Search Strategy' % strategy)
 
+        # Extract sizes and colors
         pos = {node: np.array([node[1], node[0]]) for node in self.g.nodes()}
         sizes = [attr['plays'] for node, attr in self.g.nodes(data=True)]
         wins = [attr['wins'] for node, attr in self.g.nodes(data=True)]
@@ -114,17 +118,19 @@ class MCTS():
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.gist_heat_r)
         cols = [mapper.to_rgba(v) for v in wins]
 
+        # Draw network
         nx.draw_networkx_nodes(self.g, pos,
                                node_size=sizes,
                                alpha=0.7,
                                linewidths=0,
                                node_color=cols)
-
+        # Draw grid
         plt.imshow(self.env.grid, cmap='gray')
         plt.yticks([])
         plt.xticks([])
         plt.axis('off')
 
+        # Set Start and Goal text labels
         start_pos = self.env.start
         goal_pos = self.env.goal
         for node in self.g.nodes():
@@ -132,14 +138,15 @@ class MCTS():
                 start_pos = (node[1], node[0])
             if node == goal_pos:
                 goal_pos = (node[1], node[0])
-
         plt.text(*start_pos, 'Start')
         plt.text(*goal_pos, 'Goal')
+
         pylab.draw()
         plt.pause(0.1)
 
-uct = MCTS()
+Cs = np.logspace(1, -1, 5)
 rand = MCTS()
-
 rand.simulate(max_moves=10000, strategy='Random')
-uct.simulate(max_moves=10000)
+for c in Cs:
+    uct = MCTS(C=c)
+    uct.simulate(max_moves=10000)
