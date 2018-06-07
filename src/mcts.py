@@ -30,7 +30,7 @@ class GridEnv():
 
     def action(self, next_position):
         if self.grid[next_position] == 0:
-            self.position = self.start
+            self.done = True
         elif next_position == self.goal:
             self.win = True
             self.done = True
