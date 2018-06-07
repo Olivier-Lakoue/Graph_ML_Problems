@@ -114,7 +114,7 @@ class MCTS():
         pos = {node: np.array([node[1], node[0]]) for node in self.g.nodes()}
         sizes = [attr['plays'] for node, attr in self.g.nodes(data=True)]
         wins = [attr['wins'] for node, attr in self.g.nodes(data=True)]
-        norm = Normalize(vmin=min(wins)-1, vmax=max(wins), clip=True)
+        norm = Normalize(vmin=min(wins)-2, vmax=max(wins), clip=True)
         mapper = cm.ScalarMappable(norm=norm, cmap=cm.gist_heat_r)
         cols = [mapper.to_rgba(v) for v in wins]
 
@@ -125,7 +125,7 @@ class MCTS():
                                linewidths=0,
                                node_color=cols)
         # Draw grid
-        plt.imshow(self.env.grid, cmap='gray')
+        plt.imshow(self.env.grid, cmap='Greens_r')
         plt.yticks([])
         plt.xticks([])
         plt.axis('off')
@@ -144,7 +144,7 @@ class MCTS():
         pylab.draw()
         plt.pause(0.1)
 
-Cs = np.logspace(1, -1, 5)
+Cs = np.logspace(1, -2, 3)
 rand = MCTS()
 rand.simulate(max_moves=10000, strategy='Random')
 for c in Cs:
