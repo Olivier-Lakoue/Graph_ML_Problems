@@ -125,8 +125,18 @@ class MCTS():
         plt.xticks([])
         plt.axis('off')
 
+        start_pos = self.env.start
+        goal_pos = self.env.goal
+        for node in self.g.nodes():
+            if node == start_pos:
+                start_pos = (node[1], node[0])
+            if node == goal_pos:
+                goal_pos = (node[1], node[0])
+
+        plt.text(*start_pos, 'Start')
+        plt.text(*goal_pos, 'Goal')
         pylab.draw()
-        plt.pause(0.2)
+        plt.pause(0.1)
 
 uct = MCTS()
 rand = MCTS()
