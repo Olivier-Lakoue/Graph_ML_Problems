@@ -1,6 +1,7 @@
 import primesieve
 import numpy as np
-import  networkx as nx
+import networkx as nx
+from random import choice, shuffle
 
 class PaletteWL():
     """
@@ -130,8 +131,45 @@ class PaletteWL():
                 break
             else:
                 colors = new_colors
-        return Vk, colors
+        # order Vk by colors
+        sorted_Vk = [x for x,_ in sorted(zip(Vk,colors))]
+        return sorted_Vk
 
-    def adj_mat_subgraph(self):
-        pass
+    def adj_mat_subgraph(self, Vk):
+        """"
+        Flattened upper triangular adjacency matrix
+        """
+        a = nx.to_numpy_array(self.graph)
+        # select rows
+        a = a[Vk,:]
+        # keep subgraph nodes columns
+        a = a[:, sorted(Vk)]
+        # upper triangular matrix without link to predict (a[0,1])
+        a = np.triu(a)[:,2:]
+        return a.reshape(-1)
+
+    def dataset(self, test_ratio=0.2, val_ratio=0):
+        data = []
+        edges = list(self.graph.edges())
+        negative_edges = []
+        for _ in edges:
+            while True:
+                ne = (choice(list(self.graph.nodes())), choice(list(self.graph.nodes())))
+                if ne not in edges:
+                    negative_edges.append(ne)
+                    break
+        for e in edges:
+            Vk = self.WLgraphLab(e)
+            data.append((1, self.adj_mat_subgraph(Vk)))
+        for ne in negative_edges:
+            Vk = self.WLgraphLab(ne)
+            data.append((0, self.adj_mat_subgraph(Vk)))
+
+        shuffle(data)
+
+        n = len(data)
+        train_idx = n - int(n*test_ratio) - int(n*val_ratio)
+        test_idx = train_idx + int(n*test_ratio)
+
+        return data[:train_idx,:], data[train_idx:test_idx,:], data[test_idx:,:]
 
