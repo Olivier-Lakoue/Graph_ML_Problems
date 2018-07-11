@@ -73,7 +73,7 @@ class PaletteWL():
         :return:
         """
         sp_x = nx.shortest_path_length(self.graph, v, e[0])
-        sp_y = nx.shortest_path_length((self.graph, v, e[1]))
+        sp_y = nx.shortest_path_length(self.graph, v, e[1])
         return np.sqrt(sp_x * sp_y)
 
     def hashWL(self, x, Vk, colors):
@@ -86,9 +86,7 @@ class PaletteWL():
         s_Vk = np.ceil(np.sum([np.log(primesieve.nth_prime(i)) for i in colors]))
         # sum neighbors colors
         nbg_x = list(nx.neighbors(self.graph, Vk[position]))
-        s_nbg_x = np.sum([np.log(primesieve.nth_prime(i)) for i in
-                          [colors[Vk.index(y)]]
-                          for y in nbg_x if y in Vk])
+        s_nbg_x = np.sum([np.log(primesieve.nth_prime(i)) for i in [colors[Vk.index(y)] for y in nbg_x if y in Vk]])
         return colors[position] + s_nbg_x / s_Vk
 
     def real_to_colors(self, colors):
@@ -164,12 +162,23 @@ class PaletteWL():
         for ne in negative_edges:
             Vk = self.WLgraphLab(ne)
             data.append((0, self.adj_mat_subgraph(Vk)))
-
+        
         shuffle(data)
-
+        
         n = len(data)
         train_idx = n - int(n*test_ratio) - int(n*val_ratio)
         test_idx = train_idx + int(n*test_ratio)
 
-        return data[:train_idx,:], data[train_idx:test_idx,:], data[test_idx:,:]
+        train = data[:train_idx]
+        test = data[train_idx:test_idx]
+        val = data[test_idx:]
+
+        y_train = np.array([y for y,_ in train])
+        x_train = np.array([x for _,x in train])
+        y_test = np.array([y for y,_ in test])
+        x_test = np.array([x for _, x in test])
+        y_val = np.array([y for y, _ in val])
+        x_val = np.array([x for _, x in val])
+
+        return (y_train,x_train), (y_test, x_test), (y_val, x_val)
 
