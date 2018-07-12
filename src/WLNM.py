@@ -72,8 +72,15 @@ class PaletteWL():
         Compute the distance with the shortest path length from the edge
         :return:
         """
-        sp_x = nx.shortest_path_length(self.graph, v, e[0])
-        sp_y = nx.shortest_path_length(self.graph, v, e[1])
+        try:
+            sp_x = nx.shortest_path_length(self.graph, v, e[0])
+        except nx.NetworkXNoPath:
+            # an arbitrary high value
+            sp_x = 1000
+        try:
+            sp_y = nx.shortest_path_length(self.graph, v, e[1])
+        except nx.NetworkXNoPath:
+            sp_y = 1000
         return np.sqrt(sp_x * sp_y)
 
     def hashWL(self, x, Vk, colors):
