@@ -1,4 +1,4 @@
-import primesieve
+# import primesieve
 import numpy as np
 import networkx as nx
 from random import choice, shuffle
@@ -16,6 +16,13 @@ class PaletteWL():
         """
         self.graph = g
         self.k = k
+        p = [2,  3,  5,  7,  11,  13,  17,  19,  23,  29,  31,  37,  41,  43,  47,  53,  59,  61,  67,  71,
+                       73,  79,  83,  89,  97,  101,  103,  107,  109,  113,  127,  131,  137,  139,  149,  151,  157,
+                       163,  167,  173,  179,  181,  191,  193,  197,  199,  211,  223,  227,  229,  233,  239,  241,
+                       251,  257,  263,  269,  271,  277,  281,  283,  293,  307,  311,  313,  317,  331,  337,  347,
+                       349,  353,  359,  367,  373,  379,  383,  389,  397,  401,  409,  419,  421,  431,  433,  439,
+                       443,  449,  457,  461,  463,  467,  479,  487,  491,  499,  503,  509,  521,  523]
+        self.primes = {i:n for i,n in enumerate(p)}
 
     def sub_graph(self, edge):
         """
@@ -90,10 +97,10 @@ class PaletteWL():
         """
         position = Vk.index(x)
         # Sum Vk
-        s_Vk = np.ceil(np.sum([np.log(primesieve.nth_prime(i)) for i in colors]))
+        s_Vk = np.ceil(np.sum([np.log(self.primes[i]) for i in colors]))
         # sum neighbors colors
         nbg_x = list(nx.neighbors(self.graph, Vk[position]))
-        s_nbg_x = np.sum([np.log(primesieve.nth_prime(i)) for i in [colors[Vk.index(y)] for y in nbg_x if y in Vk]])
+        s_nbg_x = np.sum([np.log(self.primes[i]) for i in [colors[Vk.index(y)] for y in nbg_x if y in Vk]])
         return colors[position] + s_nbg_x / s_Vk
 
     def real_to_colors(self, colors):
