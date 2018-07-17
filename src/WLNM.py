@@ -191,7 +191,7 @@ class PaletteWL():
         res = np.triu(res)[:, 2:]
         return res.reshape(-1, res.shape[-1])
 
-    def dataset(self, test_ratio=0.2, val_ratio=0):
+    def dataset(self, test_ratio=0.2, val_ratio=0, use_features=False):
         data = []
         edges = list(self.graph.edges())
         negative_edges = []
@@ -203,10 +203,16 @@ class PaletteWL():
                     break
         for e in edges:
             Vk = self.WLgraphLab(e)
-            data.append((1, self.adj_mat_subgraph(Vk)))
+            if use_features:
+                data.append((1, self.adj_mat_subgraph_with_features(Vk)))
+            else:
+                data.append((1, self.adj_mat_subgraph(Vk)))
         for ne in negative_edges:
             Vk = self.WLgraphLab(ne)
-            data.append((0, self.adj_mat_subgraph(Vk)))
+            if use_features:
+                data.append((0, self.adj_mat_subgraph_with_features(Vk)))
+            else:
+                data.append((0, self.adj_mat_subgraph(Vk)))
         
         shuffle(data)
         
@@ -218,12 +224,12 @@ class PaletteWL():
         test = data[train_idx:test_idx]
         val = data[test_idx:]
 
-        y_train = np.array([y for y,_ in train])
-        x_train = np.array([x for _,x in train])
-        y_test = np.array([y for y,_ in test])
-        x_test = np.array([x for _, x in test])
-        y_val = np.array([y for y, _ in val])
-        x_val = np.array([x for _, x in val])
+        y_train = np.array([y for y, _ in train])
+        x_train = np.array([x for _, x in train])
+        y_test  = np.array([y for y, _ in test])
+        x_test  = np.array([x for _, x in test])
+        y_val   = np.array([y for y, _ in val])
+        x_val   = np.array([x for _, x in val])
 
         return (y_train,x_train), (y_test, x_test), (y_val, x_val)
 
