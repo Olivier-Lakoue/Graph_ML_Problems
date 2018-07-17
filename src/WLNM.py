@@ -9,7 +9,7 @@ class PaletteWL():
     from Muhan Zhang & Yixin Chen paper KDD'17. It encodes a graph as
     sequences of links enclosing subgraph ordered by graph topology.
     """
-    def __init__(self, g, k=10):
+    def __init__(self, g, k=10, encoding_len=100):
         """
         :param g: Networkx graph
         :param k: number of vertices cutoff
@@ -23,6 +23,7 @@ class PaletteWL():
                        349,  353,  359,  367,  373,  379,  383,  389,  397,  401,  409,  419,  421,  431,  433,  439,
                        443,  449,  457,  461,  463,  467,  479,  487,  491,  499,  503,  509,  521,  523]
         self.primes = {i:n for i,n in enumerate(p)}
+        self.maxlen = encoding_len
 
     def sub_graph(self, edge):
         """
@@ -159,6 +160,36 @@ class PaletteWL():
         # upper triangular matrix without link to predict (a[0,1])
         a = np.triu(a)[:,2:]
         return a.reshape(-1)
+
+    def adj_mat_subgraph_with_features(self, Vk):
+        """
+        Flattened upper triangular adjacency matrix with an extra dim for
+        nodes encoding features
+        :param Vk:
+        :return: numpy array of shape (:,self.maxlen)
+        """
+        a = nx.to_numpy_array(self.graph)
+        # select rows
+        a = a[Vk,:]
+        # keep subgraph nodes columns
+        a = a[:, sorted(Vk)]
+        # add a dim to align with feature matrix
+        a = np.expand_dims(a, axis=2)
+
+        # feature matrix
+        feat = np.zeros((0, self.maxlen))
+        for n in Vk:
+            feat = np.vstack(feat, self.graph.node[n]['encoding'])
+        # remove the primer
+        feat = feat[1:, :]
+        # insert a dim to align with adjacency mat
+        feat = np.expand_dims(feat, axis=0)
+
+        # combine matrices
+        res = np.multiply(a, feat)
+        # remove link to predict
+        res = np.triu(res)[:, 2:]
+        return res.reshape(-1, res.shape[-1])
 
     def dataset(self, test_ratio=0.2, val_ratio=0):
         data = []
