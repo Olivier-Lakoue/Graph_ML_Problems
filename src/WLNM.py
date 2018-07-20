@@ -10,7 +10,7 @@ class PaletteWL():
     from Muhan Zhang & Yixin Chen paper KDD'17. It encodes a graph as
     sequences of links enclosing subgraph ordered by graph topology.
     """
-    def __init__(self, g, k=10, encoding_len=100):
+    def __init__(self, g, k=5, encoding_len=100):
         """
         :param g: Networkx graph
         :param k: number of vertices cutoff
@@ -74,6 +74,7 @@ class PaletteWL():
             # store the nodes
             Vk.extend(nbg)
             # next index
+            ngb_idx += 1
         # crop the lists
         return Vk[:self.k], colors[:self.k]
 
@@ -193,9 +194,9 @@ class PaletteWL():
         res = np.triu(res)[:, 2:]
         return res.reshape(-1, res.shape[-1])
 
-    def dataset(self, test_ratio=0.2, val_ratio=0, use_features=False):
+    def dataset(self,length, test_ratio=0.2, val_ratio=0, use_features=False):
         data = []
-        edges = list(self.graph.edges())
+        edges = list(self.graph.edges())[:int(length/2)]
         negative_edges = []
         total_count = 2 * len(edges)
         c = 0
