@@ -2,7 +2,11 @@ from lxml import etree
 from glob import glob
 import re
 import pandas as pd
+import numpy as np
 import os
+import networkx as nx
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 
 class Regulations():
     def __init__(self, folder):
@@ -103,3 +107,50 @@ class Acts():
         self.df = pd.DataFrame({'titles': titles, 'short_title': short_titles, 'files': files, 'repealed': repealed,
                            'references': references})
         return self.df
+
+class CitationsNetwork():
+    """
+    Build a networkx graph from the 'references' and 'titles' columns of the list of dataframes
+    :param list_of_df: list of pandas dataframes
+    """
+    def __init__(self, list_of_df, max_words=10000, embedding_dim=100, maxlen=100):
+        self.max_words = max_words
+        self.maxlen = maxlen
+        self.embedding_dim = embedding_dim
+        self.titles_dict = {}
+        self.list_df = list_of_df
+        self.parse_titles()
+        self.parse_graph()
+        self.encode_titles()
+
+    def parse_titles(self):
+        last_idx = 0
+        for df in self.list_df:
+
+            for i, row in df.iterrows():
+                if row.titles not in self.titles_dict:
+                    self.titles_dict[row.titles] = last_idx
+                    last_idx += 1
+                for ref in row.references:
+                    if ref not in self.titles_dict:
+                        self.titles_dict[ref] = last_idx
+                        last_idx += 1
+    def parse_graph(self):
+        nodes_list = [(v, {'title': k}) for k,v in self.titles_dict.items()]
+        edges_list = []
+        for df in self.list_df:
+            for i,row in df.iterrows():
+                for ref in row.references:
+                    edges_list.append((self.titles_dict[row.titles], self.titles_dict[ref]))
+        self.graph = nx.Graph()
+        self.graph.add_nodes_from(nodes_list)
+        self.graph.add_edges_from(edges_list)
+
+    def encode_titles(self):
+        tokenizer = Tokenizer(num_words=self.max_words)
+        tokenizer.fit_on_texts(list(self.titles_dict.keys()))
+
+        # annotate graph
+        for n in nx.nodes(self.graph):
+            seq = pad_sequences(tokenizer.texts_to_sequences(([self.graph.node[n]['title']])))
+            self.graph.node[n]['encoding'] = np.pad(seq, ((0,0),(0,self.maxlen)), 'constant')[:, :self.maxlen]

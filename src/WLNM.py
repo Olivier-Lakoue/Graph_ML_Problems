@@ -2,6 +2,7 @@
 import numpy as np
 import networkx as nx
 from random import choice, shuffle
+import sys
 
 class PaletteWL():
     """
@@ -15,6 +16,7 @@ class PaletteWL():
         :param k: number of vertices cutoff
         """
         self.graph = g
+        self.adj_mat = nx.adj_matrix(self.graph).todense()
         self.k = k
         p = [2,  3,  5,  7,  11,  13,  17,  19,  23,  29,  31,  37,  41,  43,  47,  53,  59,  61,  67,  71,
                        73,  79,  83,  89,  97,  101,  103,  107,  109,  113,  127,  131,  137,  139,  149,  151,  157,
@@ -152,9 +154,9 @@ class PaletteWL():
         """"
         Flattened upper triangular adjacency matrix
         """
-        a = nx.to_numpy_array(self.graph)
+
         # select rows
-        a = a[Vk,:]
+        a = self.adj_mat[Vk,:]
         # keep subgraph nodes columns
         a = a[:, sorted(Vk)]
         # upper triangular matrix without link to predict (a[0,1])
@@ -168,9 +170,9 @@ class PaletteWL():
         :param Vk:
         :return: numpy array of shape (:,self.maxlen)
         """
-        a = nx.to_numpy_array(self.graph)
+
         # select rows
-        a = a[Vk,:]
+        a = self.adj_mat[Vk, :]
         # keep subgraph nodes columns
         a = a[:, sorted(Vk)]
         # add a dim to align with feature matrix
@@ -179,9 +181,9 @@ class PaletteWL():
         # feature matrix
         feat = np.zeros((0, self.maxlen))
         for n in Vk:
-            feat = np.vstack(feat, self.graph.node[n]['encoding'])
+            feat = np.vstack( (feat, self.graph.node[n]['encoding']) )
         # remove the primer
-        feat = feat[1:, :]
+        # feat = feat[1:, :]
         # insert a dim to align with adjacency mat
         feat = np.expand_dims(feat, axis=0)
 
@@ -195,6 +197,9 @@ class PaletteWL():
         data = []
         edges = list(self.graph.edges())
         negative_edges = []
+        total_count = 2 * len(edges)
+        c = 0
+
         for _ in edges:
             while True:
                 ne = (choice(list(self.graph.nodes())), choice(list(self.graph.nodes())))
@@ -207,13 +212,26 @@ class PaletteWL():
                 data.append((1, self.adj_mat_subgraph_with_features(Vk)))
             else:
                 data.append((1, self.adj_mat_subgraph(Vk)))
+
+            # report progress
+            text = "\rProgress: {0:.0%}".format(c / total_count)
+            sys.stdout.write(text)
+            sys.stdout.flush()
+            c += 1
+
         for ne in negative_edges:
             Vk = self.WLgraphLab(ne)
             if use_features:
                 data.append((0, self.adj_mat_subgraph_with_features(Vk)))
             else:
                 data.append((0, self.adj_mat_subgraph(Vk)))
-        
+
+            # report progress
+            text = "\rProgress: {0:.0%}".format(c / total_count)
+            sys.stdout.write(text)
+            sys.stdout.flush()
+            c += 1
+
         shuffle(data)
         
         n = len(data)
